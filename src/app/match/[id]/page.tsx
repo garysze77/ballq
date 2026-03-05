@@ -60,27 +60,24 @@ export default function MatchDetail() {
   useEffect(() => {
     async function fetchMatch() {
       try {
-        // Fetch from matches/integrated which has more data
-        const res = await fetch(`${PROXY_URL}?endpoint=matches/integrated`);
+        // Fetch full detail from /match/{id}/detail endpoint
+        const res = await fetch(`${PROXY_URL}?endpoint=match/${position}/detail`);
         if (!res.ok) throw new Error("Failed to fetch");
         
         const data = await res.json();
-        const matches: any[] = data.data || [];
         
-        // Find match by name
-        const found = matches.find(m => m.name === matchName);
-        
-        if (found) {
+        // The new endpoint returns {success, position, match, detail, hkjc}
+        if (data.success) {
           setMatch({
-            position: found.position,
-            name: found.name,
-            league: found.league,
-            home_team: found.home_team,
-            away_team: found.away_team,
-            start_date: found.start_date,
-            prediction: found.prediction,
-            detail: {},
-            hkjc: found.hkjc || { found: false }
+            position: data.position,
+            name: data.match?.name,
+            league: data.match?.league,
+            home_team: data.match?.home_team,
+            away_team: data.match?.away_team,
+            start_date: data.match?.start_date,
+            prediction: data.match?.prediction,
+            detail: data.detail || {},
+            hkjc: data.hkjc || { found: false }
           });
         }
       } catch (err) {
