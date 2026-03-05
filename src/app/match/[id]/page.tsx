@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app";
+const PROXY_URL = "/api/ballq";
 
 interface MatchDetail {
   position: number;
@@ -63,8 +64,8 @@ export default function MatchDetail() {
     
     async function fetchMatch() {
       try {
-        // Use /db/match endpoint which has CORS support
-        const res = await fetch(`${API_URL}/db/match/${position}`);
+        // Use Vercel proxy to avoid CORS
+        const res = await fetch(`${PROXY_URL}?endpoint=db/match/${position}`);
         if (res.ok) {
           const data = await res.json();
           // The database returns {success, data, ...}

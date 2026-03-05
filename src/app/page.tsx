@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app";
+const PROXY_URL = "/api/ballq";
 
 interface Match {
   position: number;
@@ -68,9 +69,8 @@ export default function Home() {
   useEffect(() => {
     async function fetchMatches() {
       try {
-        const res = await fetch(`${API_URL}/matches/integrated`, {
-          signal: AbortSignal.timeout(10000)
-        });
+        // Use proxy to avoid CORS
+        const res = await fetch(`${PROXY_URL}?endpoint=matches/integrated`);
         if (res.ok) {
           const data = await res.json();
           const matchList: Match[] = data.data || [];
