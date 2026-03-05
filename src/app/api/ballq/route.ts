@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const maxDuration = 60; // Increase timeout to 60 seconds
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ballq.gonggu.app';
 
 export async function GET(request: NextRequest) {
@@ -15,11 +17,15 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(55000), // 55 second timeout
     });
     
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ 
+      error: 'Failed to fetch', 
+      details: error.message 
+    }, { status: 500 });
   }
 }
