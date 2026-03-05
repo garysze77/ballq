@@ -89,7 +89,7 @@ export default function MatchDetail() {
             start_date: found.start_date,
             prediction: found.prediction,
             detail: found.detail || {},
-            hkjc: found.hkjc || { found: false }
+            hkjc: found.hkjc_json ? JSON.parse(found.hkjc_json) : null
           });
         }
       } catch (err: any) {
@@ -249,7 +249,7 @@ export default function MatchDetail() {
         )}
 
         {/* HKJC Odds - Multiple Pools */}
-        {match.hkjc?.found && match.hkjc.odds && (
+        {match.hkjc && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -258,7 +258,7 @@ export default function MatchDetail() {
           >
             <h3 className="text-sm font-semibold text-gray-700 mb-3">HKJC 赔率</h3>
             <div className="space-y-3">
-              {Object.entries(match.hkjc.odds).map(([poolKey, pool]) => {
+              {Object.entries(match.hkjc).map(([poolKey, pool]) => {
                 if (!pool?.selections?.length) return null;
                 return (
                   <div key={poolKey} className="border-b border-gray-100 pb-2 last:border-0">
