@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MatchCard from "../components/MatchCard";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://172.104.99.225:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app";
 
 interface Match {
   position: number;
