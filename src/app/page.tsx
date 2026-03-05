@@ -149,14 +149,13 @@ export default function Home() {
               <div className="space-y-1">
                 {group.matches.map((match) => {
                   const odds = getOdds(match);
-                  const matchData = encodeURIComponent(JSON.stringify(match));
                   return (
                     <motion.div
                       key={match.position}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       whileTap={{ scale: 0.99 }}
-                      onClick={() => router.push(`/match/${match.position}?name=${encodeURIComponent(match.name)}&data=${matchData}`)}
+                      onClick={() => router.push(`/match/${match.position}?position=${match.position}&name=${encodeURIComponent(match.name)}`)}
                       className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer mb-2"
                     >
                       {/* Header */}
