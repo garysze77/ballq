@@ -37,20 +37,26 @@ export default function Home() {
   useEffect(() => {
     async function fetchMatches() {
       try {
-        const res = await fetch(`${API_URL}/matches/integrated`);
+        console.log("Fetching from:", API_URL);
+        const res = await fetch(`${API_URL}/matches/integrated`, {
+          signal: AbortSignal.timeout(10000)
+        });
+        console.log("Response status:", res.status);
         if (res.ok) {
           const data = await res.json();
+          console.log("Data received:", data);
           const matchList: Match[] = Array.isArray(data) ? data : data.matches || [];
           
           // Group by date
           const groups = groupMatchesByDate(matchList);
           setMatchGroups(groups);
         } else {
-          setError("API未連接 - 顯示Demo數據");
+          setError(`API錯誤 (${res.status}) - 顯示Demo數據`);
           setMatchGroups(getDemoMatchGroups());
         }
-      } catch (err) {
-        setError("API未連接 - 顯示Demo數據");
+      } catch (err: any) {
+        console.error("Fetch error:", err);
+        setError(`連接失敗: ${err.message} - 顯示Demo數據`);
         setMatchGroups(getDemoMatchGroups());
       } finally {
         setLoading(false);
@@ -146,7 +152,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold">Ballq 足智彩</h1>
+          <h1 className="text-lg font-bold">Ballq</h1>
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
             <span className="text-sm">G</span>
           </div>
@@ -192,36 +198,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* Bottom Tab Bar */}
-      <nav className="bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0">
-        <div className="max-w-md mx-auto flex justify-around py-2">
-          <button className="flex flex-col items-center" style={{ color: "#00994d" }}>
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-            </svg>
-            <span className="text-xs mt-1">賽事</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span className="text-xs mt-1">賽果</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-xs mt-1">投注</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span className="text-xs mt-1">更多</span>
-          </button>
-        </div>
-      </nav>
-      <div className="h-16" />
+
     </div>
   );
 }
