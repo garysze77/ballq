@@ -91,8 +91,9 @@ export default function MatchDetail() {
             hkjc: found.hkjc || { found: false }
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch match:", err);
+        setError(`載入失敗: ${err.message || err}`);
       } finally {
         setLoading(false);
       }

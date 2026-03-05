@@ -80,7 +80,8 @@ export default function Home() {
           setError(`API錯誤 (${res.status})`);
         }
       } catch (err: any) {
-        setError(`連接失敗: ${err.message}`);
+        console.error("Fetch error:", err);
+        setError(`連接失敗: ${err.message || err}`);
       } finally {
         setLoading(false);
       }
