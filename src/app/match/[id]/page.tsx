@@ -63,10 +63,26 @@ export default function MatchDetail() {
     
     async function fetchMatch() {
       try {
-        const res = await fetch(`${API_URL}/match/${position}/detail`);
+        // Use /db/match endpoint which has CORS support
+        const res = await fetch(`${API_URL}/db/match/${position}`);
         if (res.ok) {
           const data = await res.json();
-          setMatch(data);
+          // The database returns {success, data, ...}
+          if (data.success && data.data) {
+            // Transform database match to detail format
+            const dbMatch = data.data;
+            setMatch({
+              position: dbMatch.position,
+              name: dbMatch.name,
+              league: dbMatch.league,
+              home_team: dbMatch.home_team,
+              away_team: dbMatch.away_team,
+              start_date: dbMatch.start_date,
+              prediction: dbMatch.prediction,
+              detail: dbMatch.detail || {},
+              hkjc: dbMatch.hkjc || { found: false }
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to fetch match:", err);
