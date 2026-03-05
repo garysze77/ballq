@@ -55,6 +55,7 @@ export default function MatchDetail() {
   const [loading, setLoading] = useState(true);
 
   const position = searchParams.get("position");
+  const matchName = searchParams.get("name");
 
   useEffect(() => {
     async function fetchMatch() {
