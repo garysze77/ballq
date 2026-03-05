@@ -60,49 +60,28 @@ export default function MatchDetail() {
   useEffect(() => {
     async function fetchMatch() {
       try {
-        // Try the full detail endpoint first
-        try {
-          const res = await fetch(`${PROXY_URL}?endpoint=match/${position}/detail`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-              setMatch({
-                position: data.position,
-                name: data.match?.name,
-                league: data.match?.league,
-                home_team: data.match?.home_team,
-                away_team: data.match?.away_team,
-                start_date: data.match?.start_date,
-                prediction: data.match?.prediction,
-                detail: data.detail || {},
-                hkjc: data.hkjc || { found: false }
-              });
-              return;
-            }
-          }
-        } catch (detailErr) {
-          console.log('Detail endpoint failed, trying fallback');
-        }
+        // Use matches/integrated which has HKJC odds and is fast
+        const res = await fetch(`${PROXY_URL}?endpoint=matches/integrated`);
+        if (!res.ok) throw new Error("Failed to fetch");
         
-        // Fallback: use matches/integrated
-        const res2 = await fetch(`${PROXY_URL}?endpoint=matches/integrated`);
-        if (res2.ok) {
-          const data = await res2.json();
-          const matches = data.data || [];
-          const found = matches.find((m: any) => m.name === matchName);
-          if (found) {
-            setMatch({
-              position: found.position,
-              name: found.name,
-              league: found.league,
-              home_team: found.home_team,
-              away_team: found.away_team,
-              start_date: found.start_date,
-              prediction: found.prediction,
-              detail: {},
-              hkjc: found.hkjc || { found: false }
-            });
-          }
+        const data = await res.json();
+        const matches = data.data || [];
+        
+        // Find match by name
+        const found = matches.find((m: any) => m.name === matchName);
+        
+        if (found) {
+          setMatch({
+            position: found.position,
+            name: found.name,
+            league: found.league,
+            home_team: found.home_team,
+            away_team: found.away_team,
+            start_date: found.start_date,
+            prediction: found.prediction,
+            detail: {},
+            hkjc: found.hkjc || { found: false }
+          });
         }
       } catch (err) {
         console.error("Failed to fetch match:", err);
@@ -111,6 +90,7 @@ export default function MatchDetail() {
       }
     }
     fetchMatch();
+  }, [matchName]);
   }, [matchName]);
 
   if (loading) {
