@@ -8,30 +8,19 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const endpoint = searchParams.get('endpoint');
   
-  console.log('[API Proxy] Request for:', endpoint);
-  
   if (!endpoint) {
     return NextResponse.json({ error: 'Missing endpoint' }, { status: 400 });
   }
   
   try {
-    console.log('[API Proxy] Fetching from:', `${API_URL}/${endpoint}`);
-    
     const response = await fetch(`${API_URL}/${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: AbortSignal.timeout(55000),
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(30000),
     });
     
-    console.log('[API Proxy] Response status:', response.status);
-    
     const data = await response.json();
-    console.log('[API Proxy] Success:', data.success);
-    
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error('[API Proxy] Error:', error.message);
     return NextResponse.json({ 
       error: 'Failed to fetch', 
       details: error.message 
