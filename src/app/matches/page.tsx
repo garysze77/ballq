@@ -95,7 +95,7 @@ export default function Matches() {
           
           // Remove duplicates by match name
           const seen = new Set();
-          const unique = filtered.filter(m => {
+          const unique = upcoming.filter(m => {
             if (seen.has(m.name)) return false;
             seen.add(m.name);
             return true;
