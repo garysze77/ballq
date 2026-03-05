@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://172.104.99.225:8000";
 
 interface MatchDetail {
   position: number;
