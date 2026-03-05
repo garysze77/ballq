@@ -61,9 +61,8 @@ export default function MatchDetail() {
   useEffect(() => {
     async function fetchMatch() {
       try {
-        // Use matches/integrated which has HKJC odds and is fast
-        // Use direct backend URL to avoid Vercel proxy timeout
-        const res = await fetch(`https://ballq.gonggu.app/matches/integrated`);
+        // Use database endpoint which has full detail (h2h, team_form, analysis)
+        const res = await fetch(`https://ballq.gonggu.app/db/matches`);
         if (!res.ok) throw new Error("Failed to fetch");
         
         const data = await res.json();
