@@ -75,27 +75,23 @@ export default function Matches() {
           const data = await res.json();
           const allMatches: Match[] = data.data || [];
           
-          // Get today's date string
+          // Filter: only TODAY's upcoming matches with HKJC odds
           const today = new Date();
           const todayStr = today.toISOString().split("T")[0];
           
-          // Filter: today's upcoming matches with HKJC odds
-          const filtered = allMatches.filter(m => {
-            // Must have HKJC odds
-            if (!m.hkjc_json) return false;
-            
-            // Must be today or future
+          // First filter: only matches with HKJC data
+          const withHKJC = allMatches.filter(m => m.hkjc_json);
+          
+          // Second filter: only today or future
+          const upcoming = withHKJC.filter(m => {
             const matchDate = m.start_date?.split("T")[0];
-            if (!matchDate) return false;
-            return matchDate >= todayStr;
+            return matchDate && matchDate >= todayStr;
           });
           
           // Sort by start time
-          filtered.sort((a, b) => {
-            const timeA = new Date(a.start_date).getTime();
-            const timeB = new Date(b.start_date).getTime();
-            return timeA - timeB;
-          });
+          upcoming.sort((a, b) => 
+            new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+          );
           
           // Remove duplicates by match name
           const seen = new Set();
