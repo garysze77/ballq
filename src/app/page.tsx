@@ -152,7 +152,7 @@ export default function Home() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       whileTap={{ scale: 0.99 }}
-                      onClick={() => router.push(`/match/${match.position}`)}
+                      onClick={() => router.push(`/match/${match.position}?name=${encodeURIComponent(match.name)}`)}
                       className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer mb-2"
                     >
                       {/* Header */}

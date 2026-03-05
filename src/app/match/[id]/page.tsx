@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app";
 
-interface MatchDetail {
+interface MatchData {
   position: number;
   name: string;
   league: string;
@@ -14,70 +14,68 @@ interface MatchDetail {
   away_team: string;
   start_date: string;
   prediction?: string;
-  hkjc?: {
-    found: boolean;
-    match_id?: string;
-    odds?: any;
-  };
-}
-
-interface AIAnalysis {
-  match_position: number;
-  analysis: string;
-  recommendation: string;
-  confidence: number;
-  risk_level: string;
+  detail?: any;
+  ai_analysis?: any;
+  updated_at?: string;
 }
 
 export default function MatchDetail() {
   const router = useRouter();
-  const params = useParams();
-  const [match, setMatch] = useState<MatchDetail | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
+  const searchParams = useSearchParams();
+  const [match, setMatch] = useState<MatchData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const matchId = params?.id as string;
+  const matchName = searchParams.get("name");
+  const position = searchParams.get("position");
 
   useEffect(() => {
-    if (!matchId) return;
-    
     async function fetchMatch() {
       try {
-        const res = await fetch(`${API_URL}/db/match/${matchId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setMatch(data.data);
+        // Get all matches from DB
+        const res = await fetch(`${API_URL}/db/matches`);
+        if (!res.ok) throw new Error("Failed to fetch");
+        
+        const data = await res.json();
+        const matches: MatchData[] = data.data || [];
+        
+        // Try to find by name first, then by position
+        let foundMatch = null;
+        
+        if (matchName) {
+          // Find by name - get the latest one
+          foundMatch = matches
+            .filter(m => m.name === matchName)
+            .sort((a, b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime())[0];
+        }
+        
+        // Fallback to position if name not found
+        if (!foundMatch && position) {
+          const pos = parseInt(position);
+          foundMatch = matches
+            .filter(m => m.position === pos)
+            .sort((a, b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime())[0];
+        }
+        
+        // Last fallback - just use the first match with this position
+        if (!foundMatch) {
+          foundMatch = matches.find(m => m.position === parseInt(position || "1"));
+        }
+        
+        if (foundMatch) {
+          setMatch(foundMatch);
+        } else {
+          setError("找不到賽事");
         }
       } catch (err) {
         console.error("Failed to fetch match:", err);
+        setError("載入失敗");
       } finally {
         setLoading(false);
       }
     }
     fetchMatch();
-  }, [matchId]);
-
-  async function loadAIAnalysis() {
-    if (!matchId) return;
-    setAiLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/db/match/${matchId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setAiAnalysis(data.data?.ai_analysis || {
-          analysis: "No AI analysis available for this match yet.",
-          recommendation: "Please check back later.",
-          confidence: 0,
-          risk_level: "unknown"
-        });
-      }
-    } catch (err) {
-      console.error("Failed to fetch AI analysis:", err);
-    } finally {
-      setAiLoading(false);
-    }
-  }
+  }, [matchName, position]);
 
   if (loading) {
     return (
@@ -87,10 +85,10 @@ export default function MatchDetail() {
     );
   }
 
-  if (!match) {
+  if (error || !match) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">找不到賽事</div>
+        <div className="text-gray-500">{error || "找不到賽事"}</div>
       </div>
     );
   }
@@ -132,7 +130,7 @@ export default function MatchDetail() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1 text-center">
                 <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2">
-                  <span className="text-2xl font-bold text-gray-700">{match.home_team.charAt(0)}</span>
+                  <span className="text-2xl font-bold text-gray-700">{match.home_team?.charAt(0) || "?"}</span>
                 </div>
                 <span className="text-sm font-medium text-gray-800">{match.home_team}</span>
               </div>
@@ -143,7 +141,7 @@ export default function MatchDetail() {
 
               <div className="flex-1 text-center">
                 <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2">
-                  <span className="text-2xl font-bold text-gray-700">{match.away_team.charAt(0)}</span>
+                  <span className="text-2xl font-bold text-gray-700">{match.away_team?.charAt(0) || "?"}</span>
                 </div>
                 <span className="text-sm font-medium text-gray-800">{match.away_team}</span>
               </div>
@@ -159,71 +157,58 @@ export default function MatchDetail() {
           </div>
         </motion.div>
 
-        {/* HKJC Info */}
-        {match.hkjc && (
+        {/* Detail Info */}
+        {match.detail && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="bg-white rounded-lg shadow-sm p-4 mb-3"
           >
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">HKJC 資料</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">狀態:</span>
-                <span className={match.hkjc.found ? "text-green-600" : "text-gray-400"}>
-                  {match.hkjc.found ? "已配對" : "未配對"}
-                </span>
-              </div>
-              {match.hkjc.match_id && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">ID:</span>
-                  <span className="text-gray-800">{match.hkjc.match_id}</span>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">詳細數據</h3>
+            
+            {/* Team Form */}
+            {match.detail.team_form && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">{match.home_team} 近績:</span>
+                  <span className="text-sm font-medium text-gray-800">
+                    {match.detail.team_form.home_team?.last_5_form || "N/A"}
+                  </span>
                 </div>
-              )}
-            </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">{match.away_team} 近績:</span>
+                  <span className="text-sm font-medium text-gray-800">
+                    {match.detail.team_form.away_team?.last_5_form || "N/A"}
+                  </span>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
-        {/* AI Analysis Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          onClick={loadAIAnalysis}
-          disabled={aiLoading}
-          className="w-full text-white font-bold py-4 rounded-lg mb-3 transition-all disabled:opacity-50"
-          style={{ backgroundColor: "#00994d" }}
-        >
-          {aiLoading ? "分析緊..." : "🤖 AI分析 + 投注策略"}
-        </motion.button>
-
-        {/* AI Analysis Result */}
-        {aiAnalysis && (
+        {/* AI Analysis */}
+        {match.ai_analysis && Object.keys(match.ai_analysis).length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             className="bg-white rounded-lg shadow-sm p-4"
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">AI 分析</h3>
-              <span className={`px-2 py-1 rounded text-xs font-bold ${
-                aiAnalysis.confidence > 70 ? "bg-green-100 text-green-700" :
-                aiAnalysis.confidence > 50 ? "bg-yellow-100 text-yellow-700" :
-                "bg-red-100 text-red-700"
-              }`}>
-                {aiAnalysis.confidence}% 信心度
-              </span>
-            </div>
-
-            <div className="bg-gray-50 rounded p-3 mb-3">
-              <p className="text-gray-600 text-sm whitespace-pre-wrap">{aiAnalysis.analysis}</p>
-            </div>
-
-            <div className="rounded-lg p-3" style={{ backgroundColor: "#e8f5e9" }}>
-              <div className="font-bold text-sm mb-1" style={{ color: "#00994d" }}>💡 投注建議</div>
-              <p className="text-gray-800">{aiAnalysis.recommendation}</p>
-            </div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">AI 分析</h3>
+            
+            {match.ai_analysis.analysis && (
+              <div className="bg-gray-50 rounded p-3 mb-3">
+                <p className="text-gray-600 text-sm whitespace-pre-wrap">{match.ai_analysis.analysis}</p>
+              </div>
+            )}
+            
+            {match.ai_analysis.recommendation && (
+              <div className="rounded-lg p-3" style={{ backgroundColor: "#e8f5e9" }}>
+                <div className="font-bold text-sm mb-1" style={{ color: "#00994d" }}>💡 投注建議</div>
+                <p className="text-gray-800">{match.ai_analysis.recommendation}</p>
+              </div>
+            )}
           </motion.div>
         )}
       </main>
