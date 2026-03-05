@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app";
@@ -29,17 +29,22 @@ interface AIAnalysis {
   risk_level: string;
 }
 
-export default function MatchDetail({ params }: { params: { id: string } }) {
+export default function MatchDetail() {
   const router = useRouter();
+  const params = useParams();
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
 
+  const matchId = params?.id as string;
+
   useEffect(() => {
+    if (!matchId) return;
+    
     async function fetchMatch() {
       try {
-        const res = await fetch(`${API_URL}/match/${params.id}/detail`);
+        const res = await fetch(`${API_URL}/match/${matchId}/detail`);
         if (res.ok) {
           const data = await res.json();
           setMatch(data);
@@ -51,12 +56,13 @@ export default function MatchDetail({ params }: { params: { id: string } }) {
       }
     }
     fetchMatch();
-  }, [params.id]);
+  }, [matchId]);
 
   async function loadAIAnalysis() {
+    if (!matchId) return;
     setAiLoading(true);
     try {
-      const res = await fetch(`${API_URL}/match/${params.id}/ai-analysis`);
+      const res = await fetch(`${API_URL}/match/${matchId}/ai-analysis`);
       if (res.ok) {
         const data = await res.json();
         setAiAnalysis(data);
