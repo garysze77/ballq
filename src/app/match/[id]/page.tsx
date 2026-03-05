@@ -67,8 +67,16 @@ export default function MatchDetail() {
         const data = await res.json();
         const matches = data.data || [];
         
+        // Parse JSON strings from database
+        const parsedMatches = matches.map((m: any) => ({
+          ...m,
+          hkjc: m.hkjc_json ? JSON.parse(m.hkjc_json) : null,
+          detail: m.detail_json ? JSON.parse(m.detail_json) : null,
+          ai_analysis: m.ai_analysis_json ? JSON.parse(m.ai_analysis_json) : null,
+        }));
+        
         // Find match by name
-        const found = matches.find((m: any) => m.name === matchName);
+        const found = parsedMatches.find((m: any) => m.name === matchName);
         
         if (found) {
           setMatch({
@@ -79,7 +87,7 @@ export default function MatchDetail() {
             away_team: found.away_team,
             start_date: found.start_date,
             prediction: found.prediction,
-            detail: {},
+            detail: found.detail || {},
             hkjc: found.hkjc || { found: false }
           });
         }
