@@ -16,10 +16,19 @@ interface Match {
 
 function getOdds(match: Match) {
   try {
-    const hkjc = match.hkjc_json ? JSON.parse(match.hkjc_json) : null;
-    if (!hkjc?.pools?.HAD?.selections) return { home: null, draw: null, away: null };
+    // Try direct parse first
+    let hkjc = null;
+    if (match.hkjc_json) {
+      hkjc = JSON.parse(match.hkjc_json);
+    }
+    // If it's wrapped in "pools" key
+    if (hkjc && hkjc.pools) {
+      hkjc = hkjc.pools;
+    }
     
-    const selections = hkjc.pools.HAD.selections;
+    if (!hkjc?.HAD?.selections) return { home: null, draw: null, away: null };
+    
+    const selections = hkjc.HAD.selections;
     const home = selections.find((s: any) => s.name === "Home");
     const away = selections.find((s: any) => s.name === "Away");
     const draw = selections.find((s: any) => s.name === "Draw");
@@ -29,7 +38,8 @@ function getOdds(match: Match) {
       draw: draw ? parseFloat(draw.odds) : null,
       away: away ? parseFloat(away.odds) : null,
     };
-  } catch {
+  } catch (e) {
+    console.error("getOdds error:", e);
     return { home: null, draw: null, away: null };
   }
 }
