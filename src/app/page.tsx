@@ -1,65 +1,118 @@
-import Image from "next/image";
+import MatchCard from "./components/MatchCard";
+
+const demoMatches = [
+  {
+    matchId: "624",
+    league: "Premier League",
+    leagueColor: "#3b82f6",
+    homeTeam: { name: "Aston Villa" },
+    awayTeam: { name: "Chelsea" },
+    homeOdds: 2.85,
+    drawOdds: 3.45,
+    awayOdds: 2.45,
+    status: "live" as const,
+    startTime: "03:30",
+    homeScore: 1,
+    awayScore: 1,
+    half: "2nd Half",
+  },
+  {
+    matchId: "625",
+    league: "Premier League",
+    leagueColor: "#3b82f6",
+    homeTeam: { name: "Brighton" },
+    awayTeam: { name: "Arsenal" },
+    homeOdds: 4.20,
+    drawOdds: 3.80,
+    awayOdds: 1.82,
+    status: "live" as const,
+    startTime: "03:30",
+    homeScore: 0,
+    awayScore: 2,
+    half: "1st Half",
+  },
+  {
+    matchId: "626",
+    league: "Bundesliga",
+    leagueColor: "#dc2626",
+    homeTeam: { name: "Hamburger SV" },
+    awayTeam: { name: "Bayer Leverkusen" },
+    homeOdds: 5.50,
+    drawOdds: 4.20,
+    awayOdds: 1.62,
+    status: "upcoming" as const,
+    startTime: "03:30",
+  },
+  {
+    matchId: "627",
+    league: "Copa del Rey",
+    leagueColor: "#f97316",
+    homeTeam: { name: "Real Sociedad" },
+    awayTeam: { name: "Athletic Club" },
+    homeOdds: 2.65,
+    drawOdds: 3.20,
+    awayOdds: 2.75,
+    status: "upcoming" as const,
+    startTime: "04:00",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-gray-900">
+      <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+          <button className="p-2 text-gray-400 hover:text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-green-500">Ballq</h1>
+          <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+            <span className="text-sm font-medium">G</span>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      <main className="max-w-md mx-auto px-4 py-4">
+        <div className="mb-4">
+          <h2 className="text-white font-semibold">Today&apos;s Matches</h2>
+          <p className="text-gray-500 text-sm">{demoMatches.length} matches</p>
         </div>
+        {demoMatches.map((match) => (
+          <MatchCard key={match.matchId} {...match} />
+        ))}
       </main>
+
+      <nav className="bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0">
+        <div className="max-w-md mx-auto flex justify-around py-2">
+          <button className="flex flex-col items-center p-2 text-green-500">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg>
+            <span className="text-xs mt-1">Football</span>
+          </button>
+          <button className="flex flex-col items-center p-2 text-gray-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-xs mt-1">Results</span>
+          </button>
+          <button className="flex flex-col items-center p-2 text-gray-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-xs mt-1">Betting</span>
+          </button>
+          <button className="flex flex-col items-center p-2 text-gray-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="text-xs mt-1">More</span>
+          </button>
+        </div>
+      </nav>
+      <div className="h-20" />
     </div>
   );
 }
