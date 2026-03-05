@@ -259,12 +259,14 @@ export default function MatchDetail() {
             <h3 className="text-sm font-semibold text-gray-700 mb-3">HKJC 赔率</h3>
             <div className="space-y-3">
               {Object.entries(match.hkjc).map(([poolKey, pool]) => {
-                if (!pool?.selections?.length) return null;
+                if (!pool || typeof pool !== 'object') return null;
+                const poolData = pool as any;
+                if (!poolData?.selections?.length) return null;
                 return (
                   <div key={poolKey} className="border-b border-gray-100 pb-2 last:border-0">
                     <div className="text-xs font-medium text-gray-500 mb-1">{poolNames[poolKey] || poolKey}</div>
                     <div className="grid grid-cols-3 gap-1">
-                      {pool.selections.slice(0, 3).map((sel: any, idx: number) => (
+                      {(poolData.selections || []).slice(0, 3).map((sel: any, idx: number) => (
                         <div key={idx} className="bg-gray-50 rounded p-1 text-center">
                           <div className="text-xs text-gray-500">{sel.name}</div>
                           <div className="font-bold text-sm">{sel.odds}</div>
