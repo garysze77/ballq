@@ -165,7 +165,8 @@ export default function Matches() {
                 key={match.position}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="bg-white rounded-lg shadow-sm border border-gray-100 mb-3"
+                onClick={() => window.location.href = `/match/${match.position}?name=${encodeURIComponent(match.name)}`}
+                className="bg-white rounded-lg shadow-sm border border-gray-100 mb-3 cursor-pointer"
               >
                 {/* League & Time */}
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
