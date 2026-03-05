@@ -1,63 +1,104 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import MatchCard from "../components/MatchCard";
 
-const demoMatches = [
-  {
-    matchId: "624",
-    league: "Premier League",
-    leagueColor: "#3b82f6",
-    homeTeam: { name: "Aston Villa" },
-    awayTeam: { name: "Chelsea" },
-    homeOdds: 2.85,
-    drawOdds: 3.45,
-    awayOdds: 2.45,
-    status: "live" as const,
-    startTime: "03:30",
-    homeScore: 1,
-    awayScore: 1,
-    half: "2nd Half",
-  },
-  {
-    matchId: "625",
-    league: "Premier League",
-    leagueColor: "#3b82f6",
-    homeTeam: { name: "Brighton" },
-    awayTeam: { name: "Arsenal" },
-    homeOdds: 4.20,
-    drawOdds: 3.80,
-    awayOdds: 1.82,
-    status: "live" as const,
-    startTime: "03:30",
-    homeScore: 0,
-    awayScore: 2,
-    half: "1st Half",
-  },
-  {
-    matchId: "626",
-    league: "Bundesliga",
-    leagueColor: "#dc2626",
-    homeTeam: { name: "Hamburger SV" },
-    awayTeam: { name: "Bayer Leverkusen" },
-    homeOdds: 5.50,
-    drawOdds: 4.20,
-    awayOdds: 1.62,
-    status: "upcoming" as const,
-    startTime: "03:30",
-  },
-  {
-    matchId: "627",
-    league: "Copa del Rey",
-    leagueColor: "#f97316",
-    homeTeam: { name: "Real Sociedad" },
-    awayTeam: { name: "Athletic Club" },
-    homeOdds: 2.65,
-    drawOdds: 3.20,
-    awayOdds: 2.75,
-    status: "upcoming" as const,
-    startTime: "04:00",
-  },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://172.104.99.225:8000";
+
+interface Match {
+  position: number;
+  league: string;
+  league_color?: string;
+  home_team: string;
+  away_team: string;
+  home_odds?: number;
+  draw_odds?: number;
+  away_odds?: number;
+  status?: string;
+  start_time?: string;
+  home_score?: number;
+  away_score?: number;
+  half?: string;
+}
 
 export default function Home() {
+  const router = useRouter();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchMatches() {
+      try {
+        const res = await fetch(`${API_URL}/matches/integrated`);
+        if (res.ok) {
+          const data = await res.json();
+          // Handle both array and object response
+          const matchList = Array.isArray(data) ? data : data.matches || [];
+          setMatches(matchList);
+        } else {
+          // Fallback to demo data if API not available
+          setError("API未連接 - 顯示Demo數據");
+          setMatches(getDemoMatches());
+        }
+      } catch (err) {
+        setError("API未連接 - 顯示Demo數據");
+        setMatches(getDemoMatches());
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMatches();
+  }, []);
+
+  function getDemoMatches(): Match[] {
+    return [
+      {
+        position: 624,
+        league: "Premier League",
+        league_color: "#3b82f6",
+        home_team: "Aston Villa",
+        away_team: "Chelsea",
+        home_odds: 2.85,
+        draw_odds: 3.45,
+        away_odds: 2.45,
+        status: "live",
+        start_time: "03:30",
+        home_score: 1,
+        away_score: 1,
+        half: "2nd Half",
+      },
+      {
+        position: 625,
+        league: "Premier League",
+        league_color: "#3b82f6",
+        home_team: "Brighton",
+        away_team: "Arsenal",
+        home_odds: 4.2,
+        draw_odds: 3.8,
+        away_odds: 1.82,
+        status: "live",
+        start_time: "03:30",
+        home_score: 0,
+        away_score: 2,
+        half: "1st Half",
+      },
+      {
+        position: 626,
+        league: "Bundesliga",
+        league_color: "#dc2626",
+        home_team: "Hamburger SV",
+        away_team: "Bayer Leverkusen",
+        home_odds: 5.5,
+        draw_odds: 4.2,
+        away_odds: 1.62,
+        status: "upcoming",
+        start_time: "03:30",
+      },
+    ];
+  }
+
   return (
     <div className="min-h-screen bg-gray-900">
       <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
@@ -74,14 +115,31 @@ export default function Home() {
         </div>
       </header>
 
+      {error && (
+        <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-2">
+          <p className="text-yellow-400 text-sm text-center">{error}</p>
+        </div>
+      )}
+
       <main className="max-w-md mx-auto px-4 py-4">
         <div className="mb-4">
-          <h2 className="text-white font-semibold">Today&apos;s Matches</h2>
-          <p className="text-gray-500 text-sm">{demoMatches.length} matches</p>
+          <h2 className="text-white font-semibold">今日賽事</h2>
+          <p className="text-gray-500 text-sm">{matches.length} 場比賽</p>
         </div>
-        {demoMatches.map((match) => (
-          <MatchCard key={match.matchId} {...match} />
-        ))}
+
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400">Loading...</div>
+          </div>
+        ) : (
+          matches.map((match) => (
+            <MatchCard
+              key={match.position}
+              match={match}
+              onClick={() => router.push(`/match/${match.position}`)}
+            />
+          ))
+        )}
       </main>
 
       <nav className="bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0">
