@@ -57,33 +57,30 @@ export default function MatchDetail() {
   const position = searchParams.get("position");
 
   useEffect(() => {
-    if (!position) {
-      setLoading(false);
-      return;
-    }
-    
     async function fetchMatch() {
       try {
-        // Use Vercel proxy to avoid CORS
-        const res = await fetch(`${PROXY_URL}?endpoint=db/match/${position}`);
-        if (res.ok) {
-          const data = await res.json();
-          // The database returns {success, data, ...}
-          if (data.success && data.data) {
-            // Transform database match to detail format
-            const dbMatch = data.data;
-            setMatch({
-              position: dbMatch.position,
-              name: dbMatch.name,
-              league: dbMatch.league,
-              home_team: dbMatch.home_team,
-              away_team: dbMatch.away_team,
-              start_date: dbMatch.start_date,
-              prediction: dbMatch.prediction,
-              detail: dbMatch.detail || {},
-              hkjc: dbMatch.hkjc || { found: false }
-            });
-          }
+        // Fetch all matches and find by name
+        const res = await fetch(`${PROXY_URL}?endpoint=db/matches`);
+        if (!res.ok) throw new Error("Failed to fetch");
+        
+        const data = await res.json();
+        const matches: any[] = data.data || [];
+        
+        // Find match by name
+        const found = matches.find(m => m.name === matchName);
+        
+        if (found) {
+          setMatch({
+            position: found.position,
+            name: found.name,
+            league: found.league,
+            home_team: found.home_team,
+            away_team: found.away_team,
+            start_date: found.start_date,
+            prediction: found.prediction,
+            detail: found.detail || {},
+            hkjc: found.hkjc || { found: false }
+          });
         }
       } catch (err) {
         console.error("Failed to fetch match:", err);
@@ -92,7 +89,7 @@ export default function MatchDetail() {
       }
     }
     fetchMatch();
-  }, [position]);
+  }, [matchName]);
 
   if (loading) {
     return (
