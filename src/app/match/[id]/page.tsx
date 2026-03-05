@@ -62,7 +62,8 @@ export default function MatchDetail() {
     async function fetchMatch() {
       try {
         // Use matches/integrated which has HKJC odds and is fast
-        const res = await fetch(`${PROXY_URL}?endpoint=matches/integrated`);
+        // Use direct backend URL to avoid Vercel proxy timeout
+        const res = await fetch(`https://ballq.gonggu.app/matches/integrated`);
         if (!res.ok) throw new Error("Failed to fetch");
         
         const data = await res.json();

@@ -69,8 +69,8 @@ export default function Home() {
   useEffect(() => {
     async function fetchMatches() {
       try {
-        // Use proxy to avoid CORS
-        const res = await fetch(`${PROXY_URL}?endpoint=matches/integrated`);
+        // Use direct backend URL to avoid Vercel proxy timeout
+        const res = await fetch(`https://ballq.gonggu.app/matches/integrated`);
         if (res.ok) {
           const data = await res.json();
           const matchList: Match[] = data.data || [];
