@@ -89,9 +89,12 @@ export default function Home() {
   }, []);
 
   function groupMatchesByDate(matches: Match[]): MatchGroup[] {
+    // Filter to only show matches with HKJC odds
+    const matchesWithHKJC = matches.filter(m => m.hkjc?.found);
+    
     const groups: Record<string, Match[]> = {};
     
-    matches.forEach((match) => {
+    matchesWithHKJC.forEach((match) => {
       const date = match.start_date?.split("T")[0] || "Unknown";
       if (!groups[date]) {
         groups[date] = [];
