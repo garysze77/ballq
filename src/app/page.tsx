@@ -1,4 +1,4 @@
-import MatchCard from "./components/MatchCard";
+import MatchCard from "../components/MatchCard";
 
 const demoMatches = [
   {
