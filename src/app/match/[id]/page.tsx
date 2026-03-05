@@ -8,28 +8,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app";
 
 interface MatchDetail {
   position: number;
+  name: string;
   league: string;
-  league_color?: string;
   home_team: string;
   away_team: string;
-  home_odds?: number;
-  draw_odds?: number;
-  away_odds?: number;
-  status?: string;
-  start_time?: string;
-  match_date?: string;
-  home_score?: number;
-  away_score?: number;
-  half?: string;
-  // HKJC odds
-  hkjc_odds?: {
-    home?: number;
-    draw?: number;
-    away?: number;
-    half_time_home?: number;
-    half_time_away?: number;
-    totalGoals?: number;
-    handicap?: number;
+  start_date: string;
+  prediction?: string;
+  hkjc?: {
+    found: boolean;
+    match_id?: string;
+    odds?: any;
   };
 }
 
@@ -120,18 +108,17 @@ export default function MatchDetail({ params }: { params: { id: string } }) {
         >
           {/* League & Time */}
           <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-            <span className="text-sm font-medium" style={{ color: match.league_color || "#666" }}>
+            <span className="text-sm font-medium text-gray-600">
               {match.league}
             </span>
             <span className="text-xs text-gray-500">
-              {match.match_date} {match.start_time}
+              {match.start_date}
             </span>
           </div>
 
-          {/* Teams & Score */}
+          {/* Teams */}
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
-              {/* Home */}
               <div className="flex-1 text-center">
                 <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2">
                   <span className="text-2xl font-bold text-gray-700">{match.home_team.charAt(0)}</span>
@@ -139,23 +126,10 @@ export default function MatchDetail({ params }: { params: { id: string } }) {
                 <span className="text-sm font-medium text-gray-800">{match.home_team}</span>
               </div>
 
-              {/* Score */}
               <div className="text-center px-4">
-                {match.status === "live" ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl font-bold text-gray-800">{match.home_score ?? 0}</span>
-                    <span className="text-gray-400 text-xl">-</span>
-                    <span className="text-3xl font-bold text-gray-800">{match.away_score ?? 0}</span>
-                  </div>
-                ) : (
-                  <span className="text-gray-400 text-sm">VS</span>
-                )}
-                {match.half && (
-                  <div className="text-xs text-orange-500 mt-1">{match.half}</div>
-                )}
+                <span className="text-gray-400 text-xl">VS</span>
               </div>
 
-              {/* Away */}
               <div className="flex-1 text-center">
                 <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2">
                   <span className="text-2xl font-bold text-gray-700">{match.away_team.charAt(0)}</span>
@@ -164,56 +138,36 @@ export default function MatchDetail({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            {/* Main Odds */}
-            <div className="grid grid-cols-3 gap-2">
-              {match.home_odds && (
-                <button className="py-3 bg-gray-100 rounded-lg text-center hover:bg-gray-200">
-                  <div className="text-xs text-gray-500">主</div>
-                  <div className="font-bold text-gray-800">{match.home_odds.toFixed(2)}</div>
-                </button>
-              )}
-              {match.draw_odds && (
-                <button className="py-3 bg-gray-100 rounded-lg text-center hover:bg-gray-200">
-                  <div className="text-xs text-gray-500">和</div>
-                  <div className="font-bold text-gray-800">{match.draw_odds.toFixed(2)}</div>
-                </button>
-              )}
-              {match.away_odds && (
-                <button className="py-3 bg-gray-100 rounded-lg text-center hover:bg-gray-200">
-                  <div className="text-xs text-gray-500">客</div>
-                  <div className="font-bold text-gray-800">{match.away_odds.toFixed(2)}</div>
-                </button>
-              )}
-            </div>
+            {/* Prediction */}
+            {match.prediction && (
+              <div className="bg-gray-50 rounded p-3 text-sm text-gray-600">
+                <span className="font-medium">預測: </span>
+                {match.prediction}
+              </div>
+            )}
           </div>
         </motion.div>
 
-        {/* HKJC Odds */}
-        {match.hkjc_odds && (
+        {/* HKJC Info */}
+        {match.hkjc && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="bg-white rounded-lg shadow-sm p-4 mb-3"
           >
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">HKJC 赔率</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {match.hkjc_odds.home && (
-                <div className="bg-gray-50 rounded p-2">
-                  <div className="text-xs text-gray-500">主</div>
-                  <div className="font-bold text-green-600">{match.hkjc_odds.home.toFixed(2)}</div>
-                </div>
-              )}
-              {match.hkjc_odds.away && (
-                <div className="bg-gray-50 rounded p-2">
-                  <div className="text-xs text-gray-500">客</div>
-                  <div className="font-bold text-red-600">{match.hkjc_odds.away.toFixed(2)}</div>
-                </div>
-              )}
-              {match.hkjc_odds.handicap && (
-                <div className="bg-gray-50 rounded p-2 col-span-2">
-                  <div className="text-xs text-gray-500">讓球</div>
-                  <div className="font-bold text-orange-600">{match.hkjc_odds.handicap}</div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">HKJC 資料</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">狀態:</span>
+                <span className={match.hkjc.found ? "text-green-600" : "text-gray-400"}>
+                  {match.hkjc.found ? "已配對" : "未配對"}
+                </span>
+              </div>
+              {match.hkjc.match_id && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">ID:</span>
+                  <span className="text-gray-800">{match.hkjc.match_id}</span>
                 </div>
               )}
             </div>
