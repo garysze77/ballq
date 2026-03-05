@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ballq.gonggu.app";
 
-interface MatchData {
+interface Match {
   position: number;
   name: string;
   league: string;
@@ -14,68 +14,52 @@ interface MatchData {
   away_team: string;
   start_date: string;
   prediction?: string;
-  detail?: any;
-  ai_analysis?: any;
-  updated_at?: string;
+  hkjc?: {
+    found: boolean;
+    match_id?: string;
+    odds?: any;
+  };
 }
 
 export default function MatchDetail() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [match, setMatch] = useState<MatchData | null>(null);
+  const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const matchName = searchParams.get("name");
-  const position = searchParams.get("position");
+  const matchData = searchParams.get("data");
 
   useEffect(() => {
     async function fetchMatch() {
       try {
-        // Get all matches from DB
-        const res = await fetch(`${API_URL}/db/matches`);
+        // First try to get match data from URL params
+        if (matchData) {
+          const decoded = JSON.parse(decodeURIComponent(matchData));
+          setMatch(decoded);
+          setLoading(false);
+          return;
+        }
+        
+        // Fallback: fetch from API by name
+        const res = await fetch(`${API_URL}/matches/integrated`);
         if (!res.ok) throw new Error("Failed to fetch");
         
         const data = await res.json();
-        const matches: MatchData[] = data.data || [];
+        const matches: Match[] = data.data || [];
         
-        // Try to find by name first, then by position
-        let foundMatch = null;
-        
-        if (matchName) {
-          // Find by name - get the latest one
-          foundMatch = matches
-            .filter(m => m.name === matchName)
-            .sort((a, b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime())[0];
-        }
-        
-        // Fallback to position if name not found
-        if (!foundMatch && position) {
-          const pos = parseInt(position);
-          foundMatch = matches
-            .filter(m => m.position === pos)
-            .sort((a, b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime())[0];
-        }
-        
-        // Last fallback - just use the first match with this position
-        if (!foundMatch) {
-          foundMatch = matches.find(m => m.position === parseInt(position || "1"));
-        }
-        
-        if (foundMatch) {
-          setMatch(foundMatch);
-        } else {
-          setError("找不到賽事");
+        const found = matches.find(m => m.name === matchName);
+        if (found) {
+          setMatch(found);
         }
       } catch (err) {
         console.error("Failed to fetch match:", err);
-        setError("載入失敗");
       } finally {
         setLoading(false);
       }
     }
     fetchMatch();
-  }, [matchName, position]);
+  }, [matchName, matchData]);
 
   if (loading) {
     return (
@@ -85,10 +69,10 @@ export default function MatchDetail() {
     );
   }
 
-  if (error || !match) {
+  if (!match) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">{error || "找不到賽事"}</div>
+        <div className="text-gray-500">找不到賽事</div>
       </div>
     );
   }
@@ -157,58 +141,34 @@ export default function MatchDetail() {
           </div>
         </motion.div>
 
-        {/* Detail Info */}
-        {match.detail && (
+        {/* HKJC Odds */}
+        {match.hkjc && match.hkjc.found && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="bg-white rounded-lg shadow-sm p-4 mb-3"
           >
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">詳細數據</h3>
-            
-            {/* Team Form */}
-            {match.detail.team_form && (
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">{match.home_team} 近績:</span>
-                  <span className="text-sm font-medium text-gray-800">
-                    {match.detail.team_form.home_team?.last_5_form || "N/A"}
-                  </span>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">HKJC 赔率</h3>
+            <div className="space-y-2">
+              {match.hkjc.odds?.HAD?.selections?.map((sel: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center bg-gray-50 rounded p-2">
+                  <span className="text-sm text-gray-600">{sel.name}</span>
+                  <span className="font-bold text-lg">{sel.odds}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">{match.away_team} 近績:</span>
-                  <span className="text-sm font-medium text-gray-800">
-                    {match.detail.team_form.away_team?.last_5_form || "N/A"}
-                  </span>
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
           </motion.div>
         )}
 
-        {/* AI Analysis */}
-        {match.ai_analysis && Object.keys(match.ai_analysis).length > 0 && (
+        {/* No HKJC match info */}
+        {(!match.hkjc || !match.hkjc.found) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
             className="bg-white rounded-lg shadow-sm p-4"
           >
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">AI 分析</h3>
-            
-            {match.ai_analysis.analysis && (
-              <div className="bg-gray-50 rounded p-3 mb-3">
-                <p className="text-gray-600 text-sm whitespace-pre-wrap">{match.ai_analysis.analysis}</p>
-              </div>
-            )}
-            
-            {match.ai_analysis.recommendation && (
-              <div className="rounded-lg p-3" style={{ backgroundColor: "#e8f5e9" }}>
-                <div className="font-bold text-sm mb-1" style={{ color: "#00994d" }}>💡 投注建議</div>
-                <p className="text-gray-800">{match.ai_analysis.recommendation}</p>
-              </div>
-            )}
+            <p className="text-gray-500 text-sm">呢場比賽暫時未有HKJC配對</p>
           </motion.div>
         )}
       </main>
