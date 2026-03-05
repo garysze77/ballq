@@ -79,8 +79,17 @@ export default function Matches() {
           const today = new Date();
           const todayStr = today.toISOString().split("T")[0];
           
-          // First filter: only matches with HKJC data
-          const withHKJC = allMatches.filter(m => m.hkjc_json);
+          // First filter: only matches with VALID HKJC data (not empty)
+          const withHKJC = allMatches.filter(m => {
+            if (!m.hkjc_json) return false;
+            try {
+              const parsed = JSON.parse(m.hkjc_json);
+              return parsed && Object.keys(parsed).length > 0;
+            } catch {
+              return false;
+            }
+          });
+          console.log('Matches with valid HKJC:', withHKJC.length);
           
           // Second filter: only today or future
           const upcoming = withHKJC.filter(m => {
