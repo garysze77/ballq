@@ -53,6 +53,7 @@ export default function MatchDetail() {
   const searchParams = useSearchParams();
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const position = searchParams.get("position");
   const matchName = searchParams.get("name");
@@ -105,6 +106,14 @@ export default function MatchDetail() {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-red-500 p-4">{error}</div>
       </div>
     );
   }
