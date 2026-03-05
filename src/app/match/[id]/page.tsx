@@ -99,7 +99,6 @@ export default function MatchDetail() {
     }
     fetchMatch();
   }, [matchName]);
-  }, [matchName]);
 
   if (loading) {
     return (
