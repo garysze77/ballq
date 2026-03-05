@@ -44,10 +44,10 @@ export default function MatchDetail() {
     
     async function fetchMatch() {
       try {
-        const res = await fetch(`${API_URL}/match/${matchId}/detail`);
+        const res = await fetch(`${API_URL}/db/match/${matchId}`);
         if (res.ok) {
           const data = await res.json();
-          setMatch(data);
+          setMatch(data.data);
         }
       } catch (err) {
         console.error("Failed to fetch match:", err);
@@ -62,10 +62,15 @@ export default function MatchDetail() {
     if (!matchId) return;
     setAiLoading(true);
     try {
-      const res = await fetch(`${API_URL}/match/${matchId}/ai-analysis`);
+      const res = await fetch(`${API_URL}/db/match/${matchId}`);
       if (res.ok) {
         const data = await res.json();
-        setAiAnalysis(data);
+        setAiAnalysis(data.data?.ai_analysis || {
+          analysis: "No AI analysis available for this match yet.",
+          recommendation: "Please check back later.",
+          confidence: 0,
+          risk_level: "unknown"
+        });
       }
     } catch (err) {
       console.error("Failed to fetch AI analysis:", err);
