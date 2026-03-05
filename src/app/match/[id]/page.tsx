@@ -60,8 +60,8 @@ export default function MatchDetail() {
   useEffect(() => {
     async function fetchMatch() {
       try {
-        // Fetch all matches and find by name
-        const res = await fetch(`${PROXY_URL}?endpoint=db/matches`);
+        // Fetch from matches/integrated which has more data
+        const res = await fetch(`${PROXY_URL}?endpoint=matches/integrated`);
         if (!res.ok) throw new Error("Failed to fetch");
         
         const data = await res.json();
@@ -79,7 +79,7 @@ export default function MatchDetail() {
             away_team: found.away_team,
             start_date: found.start_date,
             prediction: found.prediction,
-            detail: found.detail || {},
+            detail: {},
             hkjc: found.hkjc || { found: false }
           });
         }
