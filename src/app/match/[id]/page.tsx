@@ -31,6 +31,7 @@ export default function MatchDetail() {
   const [match, setMatch] = useState<MatchInfo | null>(null)
   const [votes, setVotes] = useState<VoteData | null>(null)
   const [hasStream, setHasStream] = useState(false)
+  const [streamUrl, setStreamUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -45,6 +46,13 @@ export default function MatchDetail() {
         
         if (data.success && data.data) {
           setMatch(data.data.match_info)
+          
+          // Get stream URL
+          const sources = data.data.sources
+          if (sources && sources.length > 0) {
+            setHasStream(true)
+            setStreamUrl(sources[0].embedUrl || '')
+          }
         }
 
         // Fetch votes
@@ -232,14 +240,13 @@ export default function MatchDetail() {
               <h3 className="text-lg font-semibold">📺 直播</h3>
             </div>
             <div className="p-4">
-              {hasStream ? (
-                <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <p className="text-4xl mb-2">📺</p>
-                    <p>直播信號加載中...</p>
-                    <p className="text-sm text-gray-400 mt-2">(Stream player component)</p>
-                  </div>
-                </div>
+              {hasStream && streamUrl ? (
+                <iframe 
+                  src={streamUrl}
+                  className="w-full aspect-video bg-black rounded-lg"
+                  allowFullScreen
+                  title="Live Stream"
+                />
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <p className="text-4xl mb-2">📺</p>
