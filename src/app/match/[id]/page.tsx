@@ -46,7 +46,15 @@ interface VoteData {
 
 export default function MatchDetail() {
   const params = useParams()
-  const matchId = params?.id as string
+  const [matchId, setMatchId] = useState<string>('')
+
+  useEffect(() => {
+    async function getMatchId() {
+      const resolvedParams = await params
+      setMatchId(resolvedParams?.id as string)
+    }
+    getMatchId()
+  }, [params])
   
   const [matchData, setMatchData] = useState<MatchDetailData | null>(null)
   const [oddsData, setOddsData] = useState<OddsData | null>(null)
@@ -56,19 +64,27 @@ export default function MatchDetail() {
 
   useEffect(() => {
     async function fetchMatchDetail() {
-      if (!matchId) return
+      if (!matchId) {
+        setError('No match ID')
+        setLoading(false)
+        return
+      }
       
       try {
         // Fetch match detail
         const res = await fetch(`/api/sportsrc/detail/${matchId}`)
         const data = await res.json()
+        console.log('Detail response:', data)
         if (data.success && data.data) {
           setMatchData(data.data)
+        } else {
+          setError(data.message || 'Match not found')
         }
 
         // Fetch odds
         const oddsRes = await fetch(`/api/sportsrc/odds/${matchId}`)
         const oddsData = await oddsRes.json()
+        console.log('Odds response:', oddsData)
         if (oddsData.success && oddsData.data) {
           setOddsData(oddsData.data)
         }
@@ -76,12 +92,13 @@ export default function MatchDetail() {
         // Fetch votes
         const votesRes = await fetch(`/api/sportsrc/votes/${matchId}`)
         const votesJson = await votesRes.json()
+        console.log('Votes response:', votesJson)
         if (votesJson.success && votesJson.data) {
           setVoteData(votesJson.data)
         }
       } catch (err) {
         console.error('Error:', err)
-        setError('Error loading match')
+        setError('Error loading match: ' + (err as Error).message)
       } finally {
         setLoading(false)
       }
