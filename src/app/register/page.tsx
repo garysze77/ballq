@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { initializeApp, getApps } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
+import { getFirebaseConfig } from '@/lib/firebase'
 
 export default function Register() {
-  const { user, signInWithGoogle, loading } = useAuth()
+  const { user, signInWithGoogle, loading: authLoading } = useAuth()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -16,14 +18,18 @@ export default function Register() {
   const [error, setError] = useState('')
   const [loading2, setLoading] = useState(false)
 
-  if (!loading && user) {
+  if (!authLoading && user) {
     router.push('/dashboard')
     return null
   }
 
   const handleGoogleRegister = async () => {
     try {
-      await signInWithGoogle()
+      const config = getFirebaseConfig()
+      const app = getApps().length === 0 ? initializeApp(config) : getApps()[0]
+      const firebaseAuth = getAuth(app)
+      const provider = new GoogleAuthProvider()
+      await signInWithPopup(firebaseAuth, provider)
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.message)
@@ -46,7 +52,10 @@ export default function Register() {
 
     setLoading(true)
     try {
-      await createUserWithEmailAndPassword(auth, email, password)
+      const config = getFirebaseConfig()
+      const app = getApps().length === 0 ? initializeApp(config) : getApps()[0]
+      const firebaseAuth = getAuth(app)
+      await createUserWithEmailAndPassword(firebaseAuth, email, password)
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.message)
