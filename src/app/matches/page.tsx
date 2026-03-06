@@ -3,49 +3,62 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-interface Match {
-  position: number
+interface SportSRCLeague {
+  id: number
   name: string
-  league: string
-  home_team: string
-  away_team: string
-  start_date: string
-  prediction?: string
-  hkjc_json?: string
+  country: string
+  matches: any[]
+}
+
+interface HKJCMatch {
+  id: number
+  homeTeam: string
+  awayTeam: string
+  matchDate: string
+  odds?: any
 }
 
 export default function Matches() {
-  const [matches, setMatches] = useState<Match[]>([])
+  const [sportSrcData, setSportSrcData] = useState<SportSRCLeague[]>([])
+  const [hkjcData, setHkjcData] = useState<HKJCMatch[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [activeTab, setActiveTab] = useState<'sportsrc' | 'hkjc'>('sportsrc')
 
   useEffect(() => {
-    async function fetchMatches() {
+    async function fetchData() {
       try {
-        const res = await fetch('/api/db/matches')
-        const data = await res.json()
+        // Fetch SportSRC scores
+        const srRes = await fetch('/api/sportsrc/scores')
+        const srData = await srRes.json()
         
-        if (data.success && data.data) {
-          setMatches(data.data)
-        } else {
-          setError('Failed to load matches')
+        if (srData.data) {
+          setSportSrcData(srData.data)
+        }
+
+        // Fetch HKJC matches
+        const hkjcRes = await fetch('/api/hkjc')
+        const hkjcData = await hkjcRes.json()
+        
+        if (hkjcData.data) {
+          setHkjcData(hkjcData.data)
         }
       } catch (err) {
+        console.error('Error fetching data:', err)
         setError('Error loading matches')
-        console.error(err)
       } finally {
         setLoading(false)
       }
     }
     
-    fetchMatches()
-    const interval = setInterval(fetchMatches, 60000)
+    fetchData()
+    const interval = setInterval(fetchData, 60000)
     return () => clearInterval(interval)
   }, [])
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (timestamp: number) => {
     try {
-      const date = new Date(dateStr)
+      const date = new Date(timestamp * 1000)
       return date.toLocaleString('zh-TW', { 
         month: 'short', 
         day: 'numeric', 
@@ -53,18 +66,19 @@ export default function Matches() {
         minute: '2-digit' 
       })
     } catch {
-      return dateStr
+      return ''
     }
   }
 
-  const parseHKJC = (hkjcStr?: string) => {
-    if (!hkjcStr) return null
-    try {
-      return JSON.parse(hkjcStr)
-    } catch {
-      return null
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    )
   }
+
+  const totalMatches = sportSrcData.reduce((acc, league) => acc + league.matches.length, 0)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -83,65 +97,123 @@ export default function Matches() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold mb-6">今日賽事</h2>
         
-        {loading ? (
-          <div className="text-center py-20">
-            <p className="text-gray-500">Loading...</p>
-          </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-500">{error}</p>
-          </div>
-        ) : (
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setActiveTab('sportsrc')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === 'sportsrc' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-white text-gray-700 border'
+            }`}
+          >
+            🌍 全球賽事 ({totalMatches}場)
+          </button>
+          <button
+            onClick={() => setActiveTab('hkjc')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === 'hkjc' 
+                ? 'bg-red-600 text-white' 
+                : 'bg-white text-gray-700 border'
+            }`}
+          >
+            🇭🇰 HKJC 赔率 ({hkjcData.length}場)
+          </button>
+        </div>
+
+        {error && (
+          <div className="text-red-500 mb-4">{error}</div>
+        )}
+
+        {/* SportSRC Matches */}
+        {activeTab === 'sportsrc' && (
           <div>
-            <p className="mb-4 text-gray-600">{matches.length} 場賽事</p>
-            
-            <div className="grid gap-4">
-              {matches.map((match) => {
-                const hkjc = parseHKJC(match.hkjc_json)
-                const had = hkjc?.HAD?.selections || []
-                
-                return (
-                  <div key={match.position} className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-500">{match.league}</p>
-                        <p className="text-lg font-semibold">
-                          {match.home_team} vs {match.away_team}
-                        </p>
-                        <p className="text-sm text-gray-500">{formatDate(match.start_date)}</p>
-                        {match.prediction && (
-                          <p className="text-sm text-green-600 mt-2">
-                            🤖 {match.prediction}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="text-right">
-                        {had.length > 0 && (
-                          <div className="bg-red-50 p-2 rounded text-sm">
-                            <p className="text-red-600 font-medium mb-1">HKJC 讓球</p>
-                            <div className="space-y-1">
-                              {had.slice(0, 3).map((sel: any, idx: number) => (
-                                <div key={idx} className="flex justify-between gap-4">
-                                  <span className="text-gray-600">{sel.name}</span>
-                                  <span className="font-semibold">{sel.odds}</span>
-                                </div>
-                              ))}
+            {sportSrcData.map((league) => (
+              league.matches.length > 0 && (
+                <div key={league.id} className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <span>{league.country}</span>
+                    <span className="text-gray-500">-</span>
+                    <span>{league.name}</span>
+                    <span className="text-sm text-gray-500">({league.matches.length}場)</span>
+                  </h3>
+                  <div className="grid gap-3">
+                    {league.matches.map((match: any) => (
+                      <div key={match.id} className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-4">
+                            <div className="text-center w-12">
+                              {match.home?.badge && (
+                                <img src={match.home.badge} alt="" className="w-8 h-8 mx-auto" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium">{match.home?.name} vs {match.away?.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {match.status === 'inprogress' ? '⚽ 進行中' : 
+                                 match.status === 'finished' ? '✅ 已完場' : 
+                                 formatDate(match.timestamp)}
+                              </p>
+                              {match.is_live && (
+                                <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                                  LIVE
+                                </span>
+                              )}
                             </div>
                           </div>
-                        )}
-                        <Link 
-                          href={`/match/${match.position}`}
-                          className="inline-block mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                        >
-                          查看詳情
-                        </Link>
+                          <div className="flex items-center gap-4">
+                            {match.score?.current && (
+                              <div className="text-xl font-bold">
+                                {match.score.current.home} - {match.score.current.away}
+                              </div>
+                            )}
+                            {match.has_stream && (
+                              <span className="text-red-500">📺</span>
+                            )}
+                            <Link 
+                              href={`/match/${encodeURIComponent(match.id)}`}
+                              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                            >
+                              查看
+                            </Link>
+                          </div>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            ))}
+          </div>
+        )}
+
+        {/* HKJC Matches */}
+        {activeTab === 'hkjc' && (
+          <div>
+            {hkjcData.length > 0 ? (
+              <div className="grid gap-4">
+                {hkjcData.map((match) => (
+                  <div key={match.id} className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-lg">
+                          {match.homeTeam} vs {match.awayTeam}
+                        </p>
+                        <p className="text-sm text-gray-500">{match.matchDate}</p>
+                      </div>
+                      <Link 
+                        href={`/match/${match.id}`}
+                        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                      >
+                        查看赔率
+                      </Link>
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-10">暫無HKJC賽事</p>
+            )}
           </div>
         )}
       </main>
