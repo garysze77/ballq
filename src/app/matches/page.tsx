@@ -67,17 +67,24 @@ export default function Matches() {
     .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
 
   // Check if a match has HKJC odds
+  const getHKJCTeamName = (team: any) => {
+    if (!team) return ''
+    if (typeof team === 'string') return team
+    return team.name_en || team.name_ch || ''
+  }
+  
   const hasHKJCOdds = (homeTeam?: string, awayTeam?: string) => {
     if (!homeTeam || !awayTeam) return false
     const hHome = homeTeam.toLowerCase().split(' ')[0]
     const hAway = awayTeam.toLowerCase().split(' ')[0]
     
     return hkjcData.some(h => {
-      if (!h.homeTeam || !h.awayTeam) return false
-      const hkHome = h.homeTeam.toLowerCase()
-      const hkAway = h.awayTeam.toLowerCase()
-      return (hkHome.includes(hHome) || hHome.includes(hkHome.split(' ')[0])) &&
-             (hkAway.includes(hAway) || hAway.includes(hkAway.split(' ')[0]))
+      const hkHome = getHKJCTeamName(h.homeTeam).toLowerCase()
+      const hkAway = getHKJCTeamName(h.awayTeam).toLowerCase()
+      const hkHomeFirst = hkHome.split(' ')[0]
+      const hkAwayFirst = hkAway.split(' ')[0]
+      return (hkHome.includes(hHome) || hHome.includes(hkHomeFirst)) &&
+             (hkAway.includes(hAway) || hAway.includes(hkAwayFirst))
     })
   }
 
