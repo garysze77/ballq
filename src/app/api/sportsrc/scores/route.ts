@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const BACKEND_URL = 'http://172.104.99.225:8000'
+const BACKEND_URL = 'http://ballq.gonggu.app'
 
 export async function GET() {
   try {
