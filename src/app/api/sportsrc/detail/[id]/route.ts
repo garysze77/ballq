@@ -8,8 +8,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    // Extract numeric ID from the URL (e.g., "stade-lavallois-guingamp-14064721" -> "14064721")
-    const matchId = id.replace(/.*-(\d+)$/, '$1')
+    // Use the full match ID as-is (includes team names, e.g., "napoli-torino-13981702")
+    const matchId = id
     const res = await fetch(`${BACKEND_URL}/sportsrc/detail/${matchId}`)
     const data = await res.json()
     return NextResponse.json(data)

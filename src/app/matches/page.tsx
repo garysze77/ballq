@@ -201,7 +201,7 @@ export default function Matches() {
                       <span className="text-red-500">📺</span>
                     )}
                     <Link 
-                      href={`/match/${(match.home?.name || 'team1').toLowerCase().replace(/\s+/g, '-')}-${(match.away?.name || 'team2').toLowerCase().replace(/\s+/g, '-')}-${match.id}`}
+                      href={`/match/${match.id}`}
                       className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                     >
                       查看
