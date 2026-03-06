@@ -47,15 +47,6 @@ interface VoteData {
 export default function MatchDetail() {
   const params = useParams()
   const [matchId, setMatchId] = useState<string>('')
-
-  useEffect(() => {
-    async function getMatchId() {
-      const resolvedParams = await params
-      setMatchId(resolvedParams?.id as string)
-    }
-    getMatchId()
-  }, [params])
-  
   const [matchData, setMatchData] = useState<MatchDetailData | null>(null)
   const [oddsData, setOddsData] = useState<OddsData | null>(null)
   const [voteData, setVoteData] = useState<VoteData | null>(null)
@@ -63,12 +54,20 @@ export default function MatchDetail() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    async function fetchMatchDetail() {
-      if (!matchId) {
-        setError('No match ID')
+    async function initParams() {
+      const resolvedParams = await params
+      if (resolvedParams?.id) {
+        setMatchId(resolvedParams.id as string)
+      } else {
         setLoading(false)
-        return
       }
+    }
+    initParams()
+  }, [params])
+
+  useEffect(() => {
+    async function fetchMatchDetail() {
+      if (!matchId) return
       
       try {
         // Fetch match detail
