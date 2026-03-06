@@ -32,7 +32,6 @@ export default function MatchDetail() {
   const [votes, setVotes] = useState<VoteData | null>(null)
   const [hasStream, setHasStream] = useState(false)
   const [streamUrl, setStreamUrl] = useState('')
-  const [useIframe, setUseIframe] = useState(false)
   const [loading, setLoading] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -265,23 +264,7 @@ export default function MatchDetail() {
               <h3 className="text-lg font-semibold">📺 直播</h3>
             </div>
             <div className="p-4">
-              {hasStream && streamUrl && !useIframe ? (
-                <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                  <video 
-                    ref={videoRef}
-                    className="w-full h-full"
-                    playsInline
-                    controls
-                    autoPlay
-                  />
-                  <button 
-                    onClick={() => setUseIframe(true)}
-                    className="text-xs text-gray-400 underline mt-2"
-                  >
-                    如果無法播放，請按此使用備用播放器
-                  </button>
-                </div>
-              ) : hasStream && streamUrl ? (
+              {hasStream && streamUrl ? (
                 <iframe 
                   src={streamUrl}
                   className="w-full aspect-video bg-black rounded-lg"
