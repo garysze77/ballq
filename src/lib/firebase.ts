@@ -1,3 +1,5 @@
+'use client'
+
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 
@@ -11,5 +13,12 @@ const firebaseConfig = {
 }
 
 // Initialize Firebase only on client side
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
-export const auth = getAuth(app)
+let app: any
+let auth: any
+
+if (typeof window !== 'undefined') {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+  auth = getAuth(app)
+}
+
+export { app, auth }
