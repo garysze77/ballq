@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import Plyr from 'plyr'
+import 'plyr/dist/plyr.css'
 
 interface MatchInfo {
   id: string
@@ -33,6 +35,26 @@ export default function MatchDetail() {
   const [hasStream, setHasStream] = useState(false)
   const [streamUrl, setStreamUrl] = useState('')
   const [loading, setLoading] = useState(true)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (videoRef.current && streamUrl) {
+      const player = new Plyr(videoRef.current, {
+        controls: ['play', 'volume', 'fullscreen', 'pip'],
+        autoplay: true,
+      })
+      player.source = {
+        type: 'video',
+        sources: [
+          {
+            src: streamUrl,
+            provider: 'html5',
+          },
+        ],
+      }
+      return () => player.destroy()
+    }
+  }, [streamUrl])
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -241,12 +263,15 @@ export default function MatchDetail() {
             </div>
             <div className="p-4">
               {hasStream && streamUrl ? (
-                <iframe 
-                  src={streamUrl}
-                  className="w-full aspect-video bg-black rounded-lg"
-                  allowFullScreen
-                  title="Live Stream"
-                />
+                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                  <video 
+                    ref={videoRef}
+                    className="w-full h-full"
+                    playsInline
+                    controls
+                    autoPlay
+                  />
+                </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <p className="text-4xl mb-2">📺</p>
