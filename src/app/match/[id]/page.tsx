@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
@@ -18,45 +18,39 @@ interface MatchInfo {
   time_info: any
 }
 
+interface MatchDetailData {
+  match_info: MatchInfo
+  info: {
+    venue: { stadium: string; city: string; country: string; image: string; capacity: number }
+    referee: { name: string; country: string; photo: string; games_recorded: number }
+    managers: { home: { name: string; country: string; photo: string }; away: { name: string; country: string; photo: string } }
+  }
+  sources: any[]
+}
+
+interface OddsData {
+  bookmaker_name: string
+  markets: {
+    market_id: number
+    market_name: string
+    choices: { name: string; decimal: number; trend: string }[]
+  }[]
+}
+
 interface VoteData {
-  home: number
-  draw: number
-  away: number
+  match_winner: { home: { percent: number }; draw: { percent: number }; away: { percent: number }; total: number }
+  both_teams_score: { yes: { percent: number }; no: { percent: number }; total: number }
+  first_team_score: { home: { percent: number }; no_goal: { percent: number }; away: { percent: number }; total: number }
 }
 
 export default function MatchDetail() {
   const params = useParams()
   const matchId = params?.id as string
   
-  const [match, setMatch] = useState<MatchInfo | null>(null)
-  const [votes, setVotes] = useState<VoteData | null>(null)
-  const [hasStream, setHasStream] = useState(false)
-  const [streamUrl, setStreamUrl] = useState('')
+  const [matchData, setMatchData] = useState<MatchDetailData | null>(null)
+  const [oddsData, setOddsData] = useState<OddsData | null>(null)
+  const [voteData, setVoteData] = useState<VoteData | null>(null)
   const [loading, setLoading] = useState(true)
-  const videoRef = useRef<HTMLVideoElement>(null)
-
-  useEffect(() => {
-    async function initPlayer() {
-      if (videoRef.current && streamUrl) {
-        const Plyr = (await import('plyr')).default
-        const player = new Plyr(videoRef.current, {
-          controls: ['play', 'volume', 'fullscreen', 'pip'],
-          autoplay: true,
-        })
-        player.source = {
-          type: 'video',
-          sources: [
-            {
-              src: streamUrl,
-              provider: 'html5',
-            },
-          ],
-        }
-        return () => player.destroy()
-      }
-    }
-    initPlayer()
-  }, [streamUrl])
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -67,36 +61,22 @@ export default function MatchDetail() {
         // Fetch match detail
         const res = await fetch(`/api/sportsrc/detail/${matchId}`)
         const data = await res.json()
-        
         if (data.success && data.data) {
-          setMatch(data.data.match_info)
-          
-          // Get stream URL
-          const sources = data.data.sources
-          if (sources && sources.length > 0) {
-            setHasStream(true)
-            setStreamUrl(sources[0].embedUrl || '')
-          }
+          setMatchData(data.data)
+        }
+
+        // Fetch odds
+        const oddsRes = await fetch(`/api/sportsrc/odds/${matchId}`)
+        const oddsData = await oddsRes.json()
+        if (oddsData.success && oddsData.data) {
+          setOddsData(oddsData.data)
         }
 
         // Fetch votes
         const votesRes = await fetch(`/api/sportsrc/votes/${matchId}`)
-        const votesData = await votesRes.json()
-        if (votesData.success && votesData.data) {
-          setVotes(votesData.data)
-        }
-
-        // Check if has stream (from scores)
-        const scoresRes = await fetch('/api/sportsrc/scores')
-        const scoresData = await scoresRes.json()
-        if (scoresData.data) {
-          for (const league of scoresData.data) {
-            const found = league.matches?.find((m: any) => m.id === matchId)
-            if (found) {
-              setHasStream(found.has_stream || false)
-              break
-            }
-          }
+        const votesJson = await votesRes.json()
+        if (votesJson.success && votesJson.data) {
+          setVoteData(votesJson.data)
         }
       } catch (err) {
         console.error('Error:', err)
@@ -132,7 +112,7 @@ export default function MatchDetail() {
     )
   }
 
-  if (error || !match) {
+  if (error || !matchData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -145,9 +125,9 @@ export default function MatchDetail() {
     )
   }
 
-  const home = match.teams?.home
-  const away = match.teams?.away
-  const totalVotes = votes ? votes.home + votes.draw + votes.away : 0
+  const { match_info, info, sources } = matchData
+  const home = match_info.teams?.home
+  const away = match_info.teams?.away
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -165,7 +145,7 @@ export default function MatchDetail() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Match Header */}
         <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <p className="text-center text-gray-500 mb-4">{match.league?.name}</p>
+          <p className="text-center text-gray-500 mb-2">{match_info.league?.name}</p>
           
           <div className="flex justify-between items-center">
             {/* Home Team */}
@@ -174,22 +154,25 @@ export default function MatchDetail() {
                 <img src={home.badge} alt={home.name} className="w-24 h-24 mx-auto mb-4" />
               )}
               <h2 className="text-xl font-bold">{home?.name || 'TBD'}</h2>
+              {info?.managers?.home && (
+                <p className="text-sm text-gray-500">主教練: {info.managers.home.name}</p>
+              )}
             </div>
 
             {/* Score */}
             <div className="text-center px-8">
               <p className="text-lg font-semibold">
-                {match.status === 'inprogress' ? '⚽ 進行中' : 
-                 match.status === 'finished' ? '✅ 已完場' : 
+                {match_info.status === 'inprogress' ? '⚽ 進行中' : 
+                 match_info.status === 'finished' ? '✅ 已完場' : 
                  '未開始'}
               </p>
-              {match.score?.current && (
-                <p className="text-4xl font-bold text-green-600 mt-2">
-                  {match.score.current.home} - {match.score.current.away}
+              {match_info.score?.current && (
+                <p className="text-5xl font-bold text-green-600 mt-2">
+                  {match_info.score.current.home} - {match_info.score.current.away}
                 </p>
               )}
               <p className="text-gray-500 text-sm mt-2">
-                {formatDate(match.timestamp)}
+                {formatDate(match_info.timestamp)}
               </p>
             </div>
 
@@ -199,74 +182,57 @@ export default function MatchDetail() {
                 <img src={away.badge} alt={away.name} className="w-24 h-24 mx-auto mb-4" />
               )}
               <h2 className="text-xl font-bold">{away?.name || 'TBD'}</h2>
+              {info?.managers?.away && (
+                <p className="text-sm text-gray-500">主教練: {info.managers.away.name}</p>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Community Votes */}
+        <div className="grid md:grid-cols-2 gap-8 mb-8">
+          {/* Match Info */}
           <div className="bg-white rounded-lg shadow">
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">🗳️ 社區投票</h3>
+            <div className="p-4 border-b bg-green-50">
+              <h3 className="text-lg font-semibold">📋 賽事資訊</h3>
             </div>
-            <div className="p-4">
-              {votes && totalVotes > 0 ? (
-                <div className="space-y-4">
+            <div className="p-4 space-y-3">
+              {info?.venue && (
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">🏟️</span>
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{home?.name}</span>
-                      <span>{Math.round((votes.home / totalVotes) * 100)}%</span>
-                    </div>
-                    <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 rounded-full" 
-                        style={{ width: `${(votes.home / totalVotes) * 100}%` }}
-                      />
-                    </div>
+                    <p className="font-medium">{info.venue.stadium}</p>
+                    <p className="text-sm text-gray-500">{info.venue.city}, {info.venue.country} • 容納 {info.venue.capacity.toLocaleString()}人</p>
                   </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>和局</span>
-                      <span>{Math.round((votes.draw / totalVotes) * 100)}%</span>
-                    </div>
-                    <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gray-500 rounded-full" 
-                        style={{ width: `${(votes.draw / totalVotes) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{away?.name}</span>
-                      <span>{Math.round((votes.away / totalVotes) * 100)}%</span>
-                    </div>
-                    <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 rounded-full" 
-                        style={{ width: `${(votes.away / totalVotes) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    總投票數: {totalVotes}
-                  </p>
                 </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">暫無投票數據</p>
               )}
+              {info?.referee && (
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">👨‍⚖️</span>
+                  <div>
+                    <p className="font-medium">{info.referee.name}</p>
+                    <p className="text-sm text-gray-500">{info.referee.country} • 已執法 {info.referee.games_recorded} 場</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-start gap-3">
+                <span className="text-xl">📅</span>
+                <div>
+                  <p className="font-medium">{formatDate(match_info.timestamp)}</p>
+                  <p className="text-sm text-gray-500">{match_info.status_detail}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Live Stream */}
           <div className="bg-white rounded-lg shadow">
-            <div className="p-4 border-b">
+            <div className="p-4 border-b bg-red-50">
               <h3 className="text-lg font-semibold">📺 直播</h3>
             </div>
             <div className="p-4">
-              {hasStream && streamUrl ? (
+              {sources && sources.length > 0 ? (
                 <iframe 
-                  src={streamUrl}
+                  src={sources[0].embedUrl}
                   className="w-full aspect-video bg-black rounded-lg"
                   allowFullScreen
                   title="Live Stream"
@@ -275,39 +241,132 @@ export default function MatchDetail() {
                 <div className="text-center py-8 text-gray-500">
                   <p className="text-4xl mb-2">📺</p>
                   <p>暫無直播</p>
-                  <p className="text-sm">呢場比賽暫時無直播提供</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* Odds */}
+        {oddsData && (
+          <div className="bg-white rounded-lg shadow mb-8">
+            <div className="p-4 border-b bg-yellow-50">
+              <h3 className="text-lg font-semibold">💰 赔率 ({oddsData.bookmaker_name})</h3>
+            </div>
+            <div className="p-4">
+              <div className="grid md:grid-cols-3 gap-4">
+                {oddsData.markets.slice(0, 6).map((market) => (
+                  <div key={market.market_id} className="border rounded-lg p-3">
+                    <p className="font-medium text-sm mb-2">{market.market_name}</p>
+                    <div className="space-y-2">
+                      {market.choices.slice(0, 3).map((choice, idx) => (
+                        <div key={idx} className="flex justify-between items-center">
+                          <span className="text-sm">{choice.name}</span>
+                          <span className="font-bold text-green-600">{choice.decimal}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Community Votes */}
+        {voteData && (
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-4 border-b bg-blue-50">
+                <h3 className="text-lg font-semibold">🗳️ 誰能取勝？ ({voteData.match_winner.total.toLocaleString()} 票)</h3>
+              </div>
+              <div className="p-4 space-y-3">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>{home?.name}</span>
+                    <span>{voteData.match_winner.home.percent}%</span>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{ width: `${voteData.match_winner.home.percent}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>和局</span>
+                    <span>{voteData.match_winner.draw.percent}%</span>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-gray-500" style={{ width: `${voteData.match_winner.draw.percent}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>{away?.name}</span>
+                    <span>{voteData.match_winner.away.percent}%</span>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500" style={{ width: `${voteData.match_winner.away.percent}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-4 border-b bg-purple-50">
+                <h3 className="text-lg font-semibold">⚽ 雙方都入球？ ({voteData.both_teams_score.total.toLocaleString()} 票)</h3>
+              </div>
+              <div className="p-4 space-y-3">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>係</span>
+                    <span>{voteData.both_teams_score.yes.percent}%</span>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{ width: `${voteData.both_teams_score.yes.percent}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>否</span>
+                    <span>{voteData.both_teams_score.no.percent}%</span>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500" style={{ width: `${voteData.both_teams_score.no.percent}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* AI Prediction */}
-        <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow border border-green-200 p-6">
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow border border-green-200 p-6">
           <div className="flex items-start gap-4">
             <div className="text-4xl">🤖</div>
             <div>
               <h3 className="text-lg font-semibold mb-2">AI 預測建議</h3>
-              <p className="text-gray-600">
-                {votes && totalVotes > 0 ? (
-                  <>
-                    基於大數據分析同埋 
-                    <span className="font-semibold text-green-600">
-                      {votes.home > votes.away ? ` ${home?.name} ` : votes.away > votes.home ? ` ${away?.name} ` : ' 和局 '}
-                    </span>
-                    既社區投票傾向，建議：
-                  </>
-                ) : 'AI預測功能即將推出...'}
-              </p>
-              {votes && totalVotes > 0 && (
-                <div className="mt-3 bg-white rounded-lg p-4 border border-green-200">
-                  <p className="font-medium text-lg">
-                    {votes.home > votes.away ? `支持 ${home?.name}` : 
-                     votes.away > votes.home ? `支持 ${away?.name}` : 
-                     '建議觀望'}
+              {voteData ? (
+                <>
+                  <p className="text-gray-600 mb-3">
+                    基於大數據分析同埋 <span className="font-semibold">{voteData.match_winner.total.toLocaleString()}</span> 位球迷既投票：
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">*此為AI建議，請謹慎投注</p>
-                </div>
+                  <div className="bg-white rounded-lg p-4 border border-green-200">
+                    <p className="font-medium text-lg">
+                      {voteData.match_winner.home.percent > voteData.match_winner.away.percent 
+                        ? `🏆 推薦: ${home?.name} (${voteData.match_winner.home.percent}%球迷支持)`
+                        : `🏆 推薦: ${away?.name} (${voteData.match_winner.away.percent}%球迷支持)`
+                      }
+                    </p>
+                    {voteData.both_teams_score.yes.percent > 50 && (
+                      <p className="text-sm text-green-600 mt-2">
+                        📊 另一建議: 雙方都入球 (Yes) - {voteData.both_teams_score.yes.percent}%
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">*此為AI建議，請謹慎投注</p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-500">AI預測功能即將推出...</p>
               )}
             </div>
           </div>
