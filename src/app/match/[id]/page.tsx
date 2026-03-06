@@ -44,14 +44,52 @@ interface VoteData {
   first_team_score: { home: { percent: number }; no_goal: { percent: number }; away: { percent: number }; total: number }
 }
 
+interface LineupPlayer {
+  name: string
+  number: string
+  position: string
+  is_captain: boolean
+  photo: string
+  rating: number
+  minutes: number
+}
+
+interface LineupData {
+  confirmed: boolean
+  data: {
+    home: { coach: any; formation: string; start_xi: LineupPlayer[]; subs: LineupPlayer[] }
+    away: { coach: any; formation: string; start_xi: LineupPlayer[]; subs: LineupPlayer[] }
+  }
+}
+
+interface ShotmapData {
+  success: boolean
+  data: {
+    home: any[]
+    away: any[]
+  }
+}
+
+interface LastMatchesData {
+  success: boolean
+  data: {
+    home: any[]
+    away: any[]
+  }
+}
+
 export default function MatchDetail() {
   const params = useParams()
   const [matchId, setMatchId] = useState<string>('')
   const [matchData, setMatchData] = useState<MatchDetailData | null>(null)
   const [oddsData, setOddsData] = useState<OddsData | null>(null)
   const [voteData, setVoteData] = useState<VoteData | null>(null)
+  const [lineupData, setLineupData] = useState<LineupData | null>(null)
+  const [shotmapData, setShotmapData] = useState<ShotmapData | null>(null)
+  const [lastMatchesData, setLastMatchesData] = useState<LastMatchesData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [activeTab, setActiveTab] = useState<'lineups' | 'shotmap' | 'form' | 'h2h'>('lineups')
 
   useEffect(() => {
     async function initParams() {
@@ -94,6 +132,30 @@ export default function MatchDetail() {
         console.log('Votes response:', votesJson)
         if (votesJson.success && votesJson.data) {
           setVoteData(votesJson.data)
+        }
+
+        // Fetch lineups
+        const lineupRes = await fetch(`/api/sportsrc/lineups/${matchId}`)
+        const lineupJson = await lineupRes.json()
+        console.log('Lineup response:', lineupJson)
+        if (lineupJson.success && lineupJson.data) {
+          setLineupData(lineupJson)
+        }
+
+        // Fetch shotmap
+        const shotmapRes = await fetch(`/api/sportsrc/shotmap/${matchId}`)
+        const shotmapJson = await shotmapRes.json()
+        console.log('Shotmap response:', shotmapJson)
+        if (shotmapJson.success && shotmapJson.data) {
+          setShotmapData(shotmapJson)
+        }
+
+        // Fetch last matches
+        const lastMatchesRes = await fetch(`/api/sportsrc/last_matches/${matchId}`)
+        const lastMatchesJson = await lastMatchesRes.json()
+        console.log('Last matches response:', lastMatchesJson)
+        if (lastMatchesJson.success && lastMatchesJson.data) {
+          setLastMatchesData(lastMatchesJson)
         }
       } catch (err) {
         console.error('Error:', err)
@@ -357,7 +419,7 @@ export default function MatchDetail() {
         )}
 
         {/* AI Prediction */}
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow border border-green-200 p-6">
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow border border-green-200 p-6 mb-8">
           <div className="flex items-start gap-4">
             <div className="text-4xl">🤖</div>
             <div>
@@ -386,6 +448,173 @@ export default function MatchDetail() {
                 <p className="text-gray-500">AI預測功能即將推出...</p>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Tabbed Section: Lineups, Shotmap, Form */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          {/* Tab Headers */}
+          <div className="flex border-b">
+            <button
+              onClick={() => setActiveTab('lineups')}
+              className={`flex-1 py-3 text-center font-medium ${
+                activeTab === 'lineups' 
+                  ? 'border-b-2 border-green-500 text-green-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              📋 陣容
+            </button>
+            <button
+              onClick={() => setActiveTab('shotmap')}
+              className={`flex-1 py-3 text-center font-medium ${
+                activeTab === 'shotmap' 
+                  ? 'border-b-2 border-green-500 text-green-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              🎯 射門
+            </button>
+            <button
+              onClick={() => setActiveTab('form')}
+              className={`flex-1 py-3 text-center font-medium ${
+                activeTab === 'form' 
+                  ? 'border-b-2 border-green-500 text-green-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              📈 近績
+            </button>
+          </div>
+
+          <div className="p-4">
+            {/* Lineups Tab */}
+            {activeTab === 'lineups' && (
+              <div>
+                {lineupData?.data ? (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Home Team */}
+                    <div>
+                      <h4 className="font-semibold text-center mb-3">{home?.name}</h4>
+                      <p className="text-sm text-gray-500 text-center mb-2">
+                        陣式: {lineupData.data.home.formation} | 教練: {lineupData.data.home.coach?.name}
+                      </p>
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm text-green-600">正選 (XI)</p>
+                        {lineupData.data.home.start_xi?.map((player, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-2 py-1">
+                            <span>{player.number} {player.name}</span>
+                            <span className="text-xs text-gray-500">{player.position}</span>
+                          </div>
+                        ))}
+                        {lineupData.data.home.subs?.length > 0 && (
+                          <>
+                            <p className="font-medium text-sm text-blue-600 mt-3">後備</p>
+                            {lineupData.data.home.subs?.map((player, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-2 py-1">
+                                <span>{player.number} {player.name}</span>
+                                <span className="text-xs text-gray-500">{player.position}</span>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Away Team */}
+                    <div>
+                      <h4 className="font-semibold text-center mb-3">{away?.name}</h4>
+                      <p className="text-sm text-gray-500 text-center mb-2">
+                        陣式: {lineupData.data.away.formation} | 教練: {lineupData.data.away.coach?.name}
+                      </p>
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm text-green-600">正選 (XI)</p>
+                        {lineupData.data.away.start_xi?.map((player, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-2 py-1">
+                            <span>{player.number} {player.name}</span>
+                            <span className="text-xs text-gray-500">{player.position}</span>
+                          </div>
+                        ))}
+                        {lineupData.data.away.subs?.length > 0 && (
+                          <>
+                            <p className="font-medium text-sm text-blue-600 mt-3">後備</p>
+                            {lineupData.data.away.subs?.map((player, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-2 py-1">
+                                <span>{player.number} {player.name}</span>
+                                <span className="text-xs text-gray-500">{player.position}</span>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-8">暫無陣容資料</p>
+                )}
+              </div>
+            )}
+
+            {/* Shotmap Tab */}
+            {activeTab === 'shotmap' && (
+              <div>
+                {shotmapData?.data ? (
+                  <div className="text-center">
+                    <p className="text-gray-500 mb-4">🗺️ 射門地圖 (xG)</p>
+                    <div className="bg-green-100 rounded-lg p-8 mx-auto max-w-md">
+                      <p className="text-sm text-gray-600">
+                        主隊射門: {shotmapData.data.home?.length || 0}次<br/>
+                        客隊射門: {shotmapData.data.away?.length || 0}次
+                      </p>
+                      <p className="text-xs text-gray-400 mt-2">射門地圖功能即將推出...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-8">暫無射門資料</p>
+                )}
+              </div>
+            )}
+
+            {/* Form Tab */}
+            {activeTab === 'form' && (
+              <div>
+                {lastMatchesData?.data ? (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Home Team Form */}
+                    <div>
+                      <h4 className="font-semibold text-center mb-3">{home?.name} 近5場</h4>
+                      <div className="space-y-2">
+                        {lastMatchesData.data.home?.slice(0, 5).map((match: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
+                            <span className="text-gray-600">{match.home_team?.name} {match.home_score}-{match.away_score} {match.away_team?.name}</span>
+                            <span className={`font-medium ${match.winner_code === 1 ? 'text-green-600' : match.winner_code === 2 ? 'text-red-600' : 'text-gray-500'}`}>
+                              {match.winner_code === 1 ? 'W' : match.winner_code === 2 ? 'L' : 'D'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Away Team Form */}
+                    <div>
+                      <h4 className="font-semibold text-center mb-3">{away?.name} 近5場</h4>
+                      <div className="space-y-2">
+                        {lastMatchesData.data.away?.slice(0, 5).map((match: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
+                            <span className="text-gray-600">{match.home_team?.name} {match.home_score}-{match.away_score} {match.away_team?.name}</span>
+                            <span className={`font-medium ${match.winner_code === 1 ? 'text-green-600' : match.winner_code === 2 ? 'text-red-600' : 'text-gray-500'}`}>
+                              {match.winner_code === 1 ? 'W' : match.winner_code === 2 ? 'L' : 'D'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-8">暫無近績資料</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
