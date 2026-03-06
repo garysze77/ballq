@@ -559,14 +559,89 @@ export default function MatchDetail() {
             {activeTab === 'shotmap' && (
               <div>
                 {shotmapData?.data ? (
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-4">🗺️ 射門地圖 (xG)</p>
-                    <div className="bg-green-100 rounded-lg p-8 mx-auto max-w-md">
-                      <p className="text-sm text-gray-600">
-                        主隊射門: {shotmapData.data.home?.length || 0}次<br/>
+                  <div>
+                    <div className="flex justify-center gap-8 mb-4 text-sm">
+                      <span className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                        主隊射門: {shotmapData.data.home?.length || 0}次
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-red-500"></span>
                         客隊射門: {shotmapData.data.away?.length || 0}次
-                      </p>
-                      <p className="text-xs text-gray-400 mt-2">射門地圖功能即將推出...</p>
+                      </span>
+                    </div>
+                    
+                    {/* Pitch with shots */}
+                    <div className="relative mx-auto max-w-2xl bg-green-600 rounded-lg" style={{ height: '340px' }}>
+                      {/* Pitch lines */}
+                      <div className="absolute inset-2 border-2 border-white/50 rounded">
+                        {/* Center line */}
+                        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/30"></div>
+                        {/* Center circle */}
+                        <div className="absolute left-1/2 top-1/2 w-16 h-16 border-2 border-white/30 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                        {/* Left penalty area */}
+                        <div className="absolute left-0 top-1/2 w-16 h-24 border-2 border-white/30 -translate-y-1/2"></div>
+                        {/* Right penalty area */}
+                        <div className="absolute right-0 top-1/2 w-16 h-24 border-2 border-white/30 -translate-y-1/2"></div>
+                        {/* Left goal area */}
+                        <div className="absolute left-0 top-1/2 w-6 h-10 border-2 border-white/30 -translate-y-1/2"></div>
+                        {/* Right goal area */}
+                        <div className="absolute right-0 top-1/2 w-6 h-10 border-2 border-white/30 -translate-y-1/2"></div>
+                      </div>
+                      
+                      {/* Home team shots (from left to right) */}
+                      {shotmapData.data.home?.map((shot: any, idx: number) => {
+                        const x = (shot.coordinates?.x / 100) * 100 // 0-100 scale
+                        const y = (shot.coordinates?.y / 100) * 100
+                        return (
+                          <div
+                            key={`home-${idx}`}
+                            className="absolute w-3 h-3 rounded-full bg-green-400 border border-white shadow-lg"
+                            style={{
+                              left: `${4 + x * 0.92}%`,
+                              top: `${y}%`,
+                              transform: 'translate(-50%, -50%)',
+                              opacity: Math.max(0.3, shot.xg || 0.1)
+                            }}
+                            title={`${shot.player?.name}: xG=${shot.xg || 0}`}
+                          />
+                        )
+                      })}
+                      
+                      {/* Away team shots (from right to left - mirror) */}
+                      {shotmapData.data.away?.map((shot: any, idx: number) => {
+                        const x = (shot.coordinates?.x / 100) * 100
+                        const y = (shot.coordinates?.y / 100) * 100
+                        return (
+                          <div
+                            key={`away-${idx}`}
+                            className="absolute w-3 h-3 rounded-full bg-red-400 border border-white shadow-lg"
+                            style={{
+                              left: `${96 - x * 0.92}%`,
+                              top: `${y}%`,
+                              transform: 'translate(-50%, -50%)',
+                              opacity: Math.max(0.3, shot.xg || 0.1)
+                            }}
+                            title={`${shot.player?.name}: xG=${shot.xg || 0}`}
+                          />
+                        )
+                      })}
+                    </div>
+                    
+                    {/* Stats summary */}
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="bg-green-50 rounded p-3">
+                        <p className="font-medium text-green-700">主隊 xG</p>
+                        <p className="text-2xl font-bold">
+                          {(shotmapData.data.home?.reduce((sum: number, s: any) => sum + (s.xg || 0), 0) || 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-red-50 rounded p-3">
+                        <p className="font-medium text-red-700">客隊 xG</p>
+                        <p className="text-2xl font-bold">
+                          {(shotmapData.data.away?.reduce((sum: number, s: any) => sum + (s.xg || 0), 0) || 0).toFixed(2)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ) : (
