@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import Plyr from 'plyr'
-import 'plyr/dist/plyr.css'
 
 interface MatchInfo {
   id: string
@@ -38,22 +36,27 @@ export default function MatchDetail() {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    if (videoRef.current && streamUrl) {
-      const player = new Plyr(videoRef.current, {
-        controls: ['play', 'volume', 'fullscreen', 'pip'],
-        autoplay: true,
-      })
-      player.source = {
-        type: 'video',
-        sources: [
-          {
-            src: streamUrl,
-            provider: 'html5',
-          },
-        ],
+    async function initPlayer() {
+      if (videoRef.current && streamUrl) {
+        const Plyr = (await import('plyr')).default
+        await import('plyr/dist/plyr.css')
+        const player = new Plyr(videoRef.current, {
+          controls: ['play', 'volume', 'fullscreen', 'pip'],
+          autoplay: true,
+        })
+        player.source = {
+          type: 'video',
+          sources: [
+            {
+              src: streamUrl,
+              provider: 'html5',
+            },
+          ],
+        }
+        return () => player.destroy()
       }
-      return () => player.destroy()
     }
+    initPlayer()
   }, [streamUrl])
   const [error, setError] = useState('')
 
