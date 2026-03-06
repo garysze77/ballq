@@ -39,7 +39,6 @@ export default function MatchDetail() {
     async function initPlayer() {
       if (videoRef.current && streamUrl) {
         const Plyr = (await import('plyr')).default
-        await import('plyr/dist/plyr.css')
         const player = new Plyr(videoRef.current, {
           controls: ['play', 'volume', 'fullscreen', 'pip'],
           autoplay: true,
