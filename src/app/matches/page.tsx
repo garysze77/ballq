@@ -67,13 +67,18 @@ export default function Matches() {
     .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
 
   // Check if a match has HKJC odds
-  const hasHKJCOdds = (homeTeam: string, awayTeam: string) => {
-    return hkjcData.some(h => 
-      (h.homeTeam?.toLowerCase().includes(homeTeam?.toLowerCase().split(' ')[0]) || 
-       homeTeam?.toLowerCase().includes(h.homeTeam?.toLowerCase().split(' ')[0])) &&
-      (h.awayTeam?.toLowerCase().includes(awayTeam?.toLowerCase().split(' ')[0]) || 
-       awayTeam?.toLowerCase().includes(h.awayTeam?.toLowerCase().split(' ')[0]))
-    )
+  const hasHKJCOdds = (homeTeam?: string, awayTeam?: string) => {
+    if (!homeTeam || !awayTeam) return false
+    const hHome = homeTeam.toLowerCase().split(' ')[0]
+    const hAway = awayTeam.toLowerCase().split(' ')[0]
+    
+    return hkjcData.some(h => {
+      if (!h.homeTeam || !h.awayTeam) return false
+      const hkHome = h.homeTeam.toLowerCase()
+      const hkAway = h.awayTeam.toLowerCase()
+      return (hkHome.includes(hHome) || hHome.includes(hkHome.split(' ')[0])) &&
+             (hkAway.includes(hAway) || hAway.includes(hkAway.split(' ')[0]))
+    })
   }
 
   const formatDate = (timestamp: number) => {
