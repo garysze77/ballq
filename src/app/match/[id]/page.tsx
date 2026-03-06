@@ -9,6 +9,7 @@ interface MatchInfo {
   title: string
   timestamp: number
   status: string
+  status_detail?: string
   league: any
   teams: {
     home: { name: string; code: string; color: string; badge: string }
