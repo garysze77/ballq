@@ -90,6 +90,7 @@ export default function MatchDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'lineups' | 'shotmap' | 'form' | 'h2h'>('lineups')
+  const [streamMode, setStreamMode] = useState<'player' | 'embed'>('embed')
 
   useEffect(() => {
     async function initParams() {
@@ -310,12 +311,46 @@ export default function MatchDetail() {
             </div>
             <div className="p-4">
               {sources && sources.length > 0 ? (
-                <iframe 
-                  src={sources[0].embedUrl}
-                  className="w-full aspect-video bg-black rounded-lg"
-                  allowFullScreen
-                  title="Live Stream"
-                />
+                <div>
+                  {/* Stream options */}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => setStreamMode('player')}
+                      className={`px-3 py-1 text-sm rounded ${streamMode === 'player' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+                    >
+                      🎬 Clean Player
+                    </button>
+                    <button
+                      onClick={() => setStreamMode('embed')}
+                      className={`px-3 py-1 text-sm rounded ${streamMode === 'embed' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+                    >
+                      📺 Standard
+                    </button>
+                    <button
+                      onClick={() => window.open(sources[0].embedUrl, '_blank')}
+                      className="px-3 py-1 text-sm rounded bg-blue-500 text-white"
+                    >
+                      🔗 Open New Window
+                    </button>
+                  </div>
+                  
+                  {streamMode === 'player' ? (
+                    <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <p className="text-4xl mb-2">📺</p>
+                        <p className="text-sm">呢個Stream需要JavaScript加載</p>
+                        <p className="text-xs text-gray-400 mt-2">請使用"Open New Window"或"Standard"選項</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <iframe 
+                      src={sources[0].embedUrl}
+                      className="w-full aspect-video bg-black rounded-lg"
+                      allowFullScreen
+                      title="Live Stream"
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <p className="text-4xl mb-2">📺</p>
