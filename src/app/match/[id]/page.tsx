@@ -298,7 +298,7 @@ export default function MatchDetail() {
                   <span className="text-xl">🏟️</span>
                   <div>
                     <p className="font-medium">{info.venue.stadium}</p>
-                    <p className="text-sm text-gray-500">{info.venue.city}, {info.venue.country} • 容納 {info.venue.capacity.toLocaleString()}人</p>
+                    <p className="text-sm text-gray-500">{info.venue.city}, {info.venue.country} • 容納 {info.venue.capacity?.toLocaleString() || 'N/A'}人</p>
                   </div>
                 </div>
               )}
@@ -314,8 +314,8 @@ export default function MatchDetail() {
               <div className="flex items-start gap-3">
                 <span className="text-xl">📅</span>
                 <div>
-                  <p className="font-medium">{formatDate(match_info.timestamp)}</p>
-                  <p className="text-sm text-gray-500">{match_info.status_detail}</p>
+                  <p className="font-medium">{match_info?.timestamp ? formatDate(match_info.timestamp) : 'N/A'}</p>
+                  <p className="text-sm text-gray-500">{match_info?.status_detail || ''}</p>
                 </div>
               </div>
             </div>
@@ -418,11 +418,11 @@ export default function MatchDetail() {
         )}
 
         {/* Community Votes */}
-        {voteData && (
+        {voteData?.match_winner && (
           <div className="grid md:grid-cols-2 gap-8 mb-8">
             <div className="bg-white rounded-lg shadow">
               <div className="p-4 border-b bg-blue-50">
-                <h3 className="text-lg font-semibold">🗳️ 誰能取勝？ ({voteData.match_winner.total.toLocaleString()} 票)</h3>
+                <h3 className="text-lg font-semibold">🗳️ 誰能取勝？ ({voteData.match_winner.total?.toLocaleString() || 0} 票)</h3>
               </div>
               <div className="p-4 space-y-3">
                 <div>
@@ -457,7 +457,7 @@ export default function MatchDetail() {
 
             <div className="bg-white rounded-lg shadow">
               <div className="p-4 border-b bg-purple-50">
-                <h3 className="text-lg font-semibold">⚽ 雙方都入球？ ({voteData.both_teams_score.total.toLocaleString()} 票)</h3>
+                <h3 className="text-lg font-semibold">⚽ 雙方都入球？ ({voteData.both_teams_score.total?.toLocaleString() || 0} 票)</h3>
               </div>
               <div className="p-4 space-y-3">
                 <div>
@@ -492,7 +492,7 @@ export default function MatchDetail() {
               {voteData ? (
                 <>
                   <p className="text-gray-600 mb-3">
-                    基於大數據分析同埋 <span className="font-semibold">{voteData.match_winner.total.toLocaleString()}</span> 位球迷既投票：
+                    基於大數據分析同埋 <span className="font-semibold">{voteData.match_winner.total?.toLocaleString() || 0}</span> 位球迷既投票：
                   </p>
                   <div className="bg-white rounded-lg p-4 border border-green-200">
                     <p className="font-medium text-lg">
