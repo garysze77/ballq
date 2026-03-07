@@ -78,6 +78,14 @@ interface LastMatchesData {
   }
 }
 
+interface StreamData {
+  success: boolean
+  stream_url?: string
+  embed_url?: string
+  type: string
+  message?: string
+}
+
 export default function MatchDetail() {
   const params = useParams()
   const [matchId, setMatchId] = useState<string>('')
@@ -91,6 +99,7 @@ export default function MatchDetail() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'lineups' | 'shotmap' | 'form' | 'h2h'>('lineups')
   const [streamMode, setStreamMode] = useState<'player' | 'embed'>('embed')
+  const [streamData, setStreamData] = useState<StreamData | null>(null)
 
   useEffect(() => {
     async function initParams() {
@@ -157,6 +166,14 @@ export default function MatchDetail() {
         console.log('Last matches response:', lastMatchesJson)
         if (lastMatchesJson.success && lastMatchesJson.data) {
           setLastMatchesData(lastMatchesJson)
+        }
+
+        // Fetch stream
+        const streamRes = await fetch(`/api/sportsrc/stream/${matchId}`)
+        const streamJson = await streamRes.json()
+        console.log('Stream response:', streamJson)
+        if (streamJson.success) {
+          setStreamData(streamJson)
         }
       } catch (err) {
         console.error('Error:', err)
@@ -310,7 +327,7 @@ export default function MatchDetail() {
               <h3 className="text-lg font-semibold">📺 直播</h3>
             </div>
             <div className="p-4">
-              {sources && sources.length > 0 ? (
+              {sources && sources.length > 0 || streamData?.embed_url || streamData?.stream_url ? (
                 <div>
                   {/* Stream options */}
                   <div className="flex gap-2 mb-3">
@@ -327,7 +344,7 @@ export default function MatchDetail() {
                       📺 Standard
                     </button>
                     <button
-                      onClick={() => window.open(sources[0].embedUrl, '_blank')}
+                      onClick={() => window.open(streamData?.embed_url || sources?.[0]?.embedUrl, '_blank')}
                       className="px-3 py-1 text-sm rounded bg-blue-500 text-white"
                     >
                       🔗 Open New Window
@@ -335,16 +352,29 @@ export default function MatchDetail() {
                   </div>
                   
                   {streamMode === 'player' ? (
-                    <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
-                      <div className="text-center text-white">
-                        <p className="text-4xl mb-2">📺</p>
-                        <p className="text-sm">呢個Stream需要JavaScript加載</p>
-                        <p className="text-xs text-gray-400 mt-2">請使用"Open New Window"或"Standard"選項</p>
+                    streamData?.stream_url ? (
+                      <div className="bg-black rounded-lg aspect-video">
+                        <video
+                          controls
+                          autoPlay
+                          className="w-full h-full"
+                          src={streamData.stream_url}
+                        >
+                          Your browser does not support video playback.
+                        </video>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <p className="text-4xl mb-2">📺</p>
+                          <p className="text-sm">暫無Direct Stream</p>
+                          <p className="text-xs text-gray-400 mt-2">請使用"Standard"選項</p>
+                        </div>
+                      </div>
+                    )
                   ) : (
                     <iframe 
-                      src={sources[0].embedUrl}
+                      src={streamData?.embed_url || sources?.[0]?.embedUrl}
                       className="w-full aspect-video bg-black rounded-lg"
                       allowFullScreen
                       title="Live Stream"
