@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import 'video.js/dist/video-js.css'
+import VideoJS from 'video.js'
 
 interface MatchInfo {
   id: string
@@ -85,6 +87,51 @@ interface StreamData {
   iframe_url?: string
   type: string
   message?: string
+}
+
+// VideoPlayer component for m3u8 streams
+function VideoPlayer({ url }: { url: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const playerRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (!videoRef.current) return
+
+    // Make sure Video.js player is only initialized once
+    if (!playerRef.current) {
+      const videoElement = videoRef.current
+
+      if (!videoElement) return
+
+      playerRef.current = VideoJS(videoElement, {
+        autoplay: true,
+        controls: true,
+        responsive: true,
+        fluid: true,
+        sources: [{
+          src: url,
+          type: 'application/x-mpegURL'
+        }]
+      })
+    }
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.dispose()
+        playerRef.current = null
+      }
+    }
+  }, [url])
+
+  return (
+    <div data-vjs-player>
+      <video
+        ref={videoRef}
+        className="video-js vjs-big-play-centered"
+        playsInline
+      />
+    </div>
+  )
 }
 
 export default function MatchDetail() {
@@ -327,19 +374,36 @@ export default function MatchDetail() {
               <h3 className="text-lg font-semibold">📺 直播</h3>
             </div>
             <div className="p-4">
-              {streamData?.iframe_url || streamData?.embed_url || (sources && sources.length > 0) ? (
-                <iframe
-                  src={streamData?.iframe_url || streamData?.embed_url || sources?.[0]?.embedUrl}
-                  className="w-full aspect-video bg-black rounded-lg"
-                  allowFullScreen
-                  title="Live Stream"
-                />
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p className="text-4xl mb-2">📺</p>
-                  <p>暫無直播</p>
-                </div>
-              )}
+              {(() => {
+                const streamUrl = streamData?.iframe_url || streamData?.embed_url || sources?.[0]?.embedUrl
+                const isM3U8 = streamUrl?.includes('.m3u8')
+
+                if (!streamUrl) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      <p className="text-4xl mb-2">📺</p>
+                      <p>暫無直播</p>
+                    </div>
+                  )
+                }
+
+                if (isM3U8) {
+                  // Use video.js for m3u8 streams
+                  return (
+                    <VideoPlayer url={streamUrl} />
+                  )
+                }
+
+                // Use iframe for other streams (pooembed.eu, etc.)
+                return (
+                  <iframe
+                    src={streamUrl}
+                    className="w-full aspect-video bg-black rounded-lg"
+                    allowFullScreen
+                    title="Live Stream"
+                  />
+                )
+              })()}
             </div>
           </div>
         </div>
