@@ -82,6 +82,7 @@ interface StreamData {
   success: boolean
   stream_url?: string
   embed_url?: string
+  iframe_url?: string
   type: string
   message?: string
 }
@@ -98,7 +99,6 @@ export default function MatchDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'lineups' | 'shotmap' | 'form' | 'h2h'>('lineups')
-  const [streamMode, setStreamMode] = useState<'player' | 'embed'>('embed')
   const [streamData, setStreamData] = useState<StreamData | null>(null)
 
   useEffect(() => {
@@ -327,60 +327,13 @@ export default function MatchDetail() {
               <h3 className="text-lg font-semibold">📺 直播</h3>
             </div>
             <div className="p-4">
-              {sources && sources.length > 0 || streamData?.embed_url || streamData?.stream_url ? (
-                <div>
-                  {/* Stream options */}
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      onClick={() => setStreamMode('player')}
-                      className={`px-3 py-1 text-sm rounded ${streamMode === 'player' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
-                    >
-                      🎬 Clean Player
-                    </button>
-                    <button
-                      onClick={() => setStreamMode('embed')}
-                      className={`px-3 py-1 text-sm rounded ${streamMode === 'embed' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
-                    >
-                      📺 Standard
-                    </button>
-                    <button
-                      onClick={() => window.open(streamData?.embed_url || sources?.[0]?.embedUrl, '_blank')}
-                      className="px-3 py-1 text-sm rounded bg-blue-500 text-white"
-                    >
-                      🔗 Open New Window
-                    </button>
-                  </div>
-                  
-                  {streamMode === 'player' ? (
-                    streamData?.stream_url ? (
-                      <div className="bg-black rounded-lg aspect-video">
-                        <video
-                          controls
-                          autoPlay
-                          className="w-full h-full"
-                          src={streamData.stream_url}
-                        >
-                          Your browser does not support video playback.
-                        </video>
-                      </div>
-                    ) : (
-                      <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
-                        <div className="text-center text-white">
-                          <p className="text-4xl mb-2">📺</p>
-                          <p className="text-sm">暫無Direct Stream</p>
-                          <p className="text-xs text-gray-400 mt-2">請使用"Standard"選項</p>
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <iframe 
-                      src={streamData?.embed_url || sources?.[0]?.embedUrl}
-                      className="w-full aspect-video bg-black rounded-lg"
-                      allowFullScreen
-                      title="Live Stream"
-                    />
-                  )}
-                </div>
+              {streamData?.iframe_url || streamData?.embed_url || (sources && sources.length > 0) ? (
+                <iframe
+                  src={streamData?.iframe_url || streamData?.embed_url || sources?.[0]?.embedUrl}
+                  className="w-full aspect-video bg-black rounded-lg"
+                  allowFullScreen
+                  title="Live Stream"
+                />
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <p className="text-4xl mb-2">📺</p>
