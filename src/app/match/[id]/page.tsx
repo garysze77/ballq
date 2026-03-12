@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import 'video.js/dist/video-js.css'
-import VideoJS from 'video.js'
 
 interface MatchInfo {
   id: string
@@ -87,52 +85,6 @@ interface StreamData {
   iframe_url?: string
   type: string
   message?: string
-}
-
-// VideoPlayer component for m3u8 streams with CORS proxy
-function VideoPlayer({ url }: { url: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const playerRef = useRef<any>(null)
-
-  // Use allorigins CORS proxy
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-
-  useEffect(() => {
-    if (!videoRef.current) return
-
-    if (!playerRef.current) {
-      const videoElement = videoRef.current
-      if (!videoElement) return
-
-      playerRef.current = VideoJS(videoElement, {
-        autoplay: true,
-        controls: true,
-        responsive: true,
-        fluid: true,
-        sources: [{
-          src: proxyUrl,
-          type: 'application/x-mpegURL'
-        }]
-      })
-    }
-
-    return () => {
-      if (playerRef.current) {
-        playerRef.current.dispose()
-        playerRef.current = null
-      }
-    }
-  }, [proxyUrl])
-
-  return (
-    <div data-vjs-player>
-      <video
-        ref={videoRef}
-        className="video-js vjs-big-play-centered"
-        playsInline
-      />
-    </div>
-  )
 }
 
 export default function MatchDetail() {
@@ -388,15 +340,13 @@ export default function MatchDetail() {
                   )
                 }
 
-                // Use video.js with CORS proxy for m3u8 streams
-                if (streamType === 'm3u8' || streamUrl.endsWith('.m3u8')) {
-                  return <VideoPlayer url={streamUrl} />
-                }
+                // Use our clean stream.html page to embed streams
+                // This avoids ads from external embed sites
+                const ourStreamUrl = `https://ballq.vercel.app/stream.html?url=${encodeURIComponent(streamUrl)}`
 
-                // Use iframe for other streams
                 return (
                   <iframe
-                    src={streamUrl}
+                    src={ourStreamUrl}
                     className="w-full aspect-video bg-black rounded-lg"
                     allowFullScreen
                     title="Live Stream"
