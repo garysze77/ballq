@@ -30,13 +30,16 @@
         const streamUrl = params.get('url');
 
         if (streamUrl) {
+            // Use Vercel API proxy to bypass CORS
+            const proxyUrl = '/api/proxy/m3u8?url=' + encodeURIComponent(streamUrl);
+
             const player = videojs('player', {
                 autoplay: true,
                 controls: true,
                 responsive: true,
                 fluid: true,
                 sources: [{
-                    src: streamUrl,
+                    src: proxyUrl,
                     type: 'application/x-mpegURL'
                 }]
             });
