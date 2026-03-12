@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import 'video.js/dist/video-js.css'
-import VideoJS from 'video.js'
 
 interface MatchInfo {
   id: string
@@ -87,51 +85,6 @@ interface StreamData {
   iframe_url?: string
   type: string
   message?: string
-}
-
-// VideoPlayer component for m3u8 streams
-function VideoPlayer({ url }: { url: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const playerRef = useRef<any>(null)
-
-  useEffect(() => {
-    if (!videoRef.current) return
-
-    // Make sure Video.js player is only initialized once
-    if (!playerRef.current) {
-      const videoElement = videoRef.current
-
-      if (!videoElement) return
-
-      playerRef.current = VideoJS(videoElement, {
-        autoplay: true,
-        controls: true,
-        responsive: true,
-        fluid: true,
-        sources: [{
-          src: url,
-          type: 'application/x-mpegURL'
-        }]
-      })
-    }
-
-    return () => {
-      if (playerRef.current) {
-        playerRef.current.dispose()
-        playerRef.current = null
-      }
-    }
-  }, [url])
-
-  return (
-    <div data-vjs-player>
-      <video
-        ref={videoRef}
-        className="video-js vjs-big-play-centered"
-        playsInline
-      />
-    </div>
-  )
 }
 
 export default function MatchDetail() {
@@ -376,7 +329,6 @@ export default function MatchDetail() {
             <div className="p-4">
               {(() => {
                 const streamUrl = streamData?.iframe_url || streamData?.embed_url || sources?.[0]?.embedUrl
-                const isM3U8 = streamUrl?.includes('.m3u8')
 
                 if (!streamUrl) {
                   return (
@@ -387,14 +339,8 @@ export default function MatchDetail() {
                   )
                 }
 
-                if (isM3U8) {
-                  // Use video.js for m3u8 streams
-                  return (
-                    <VideoPlayer url={streamUrl} />
-                  )
-                }
-
-                // Use iframe for other streams (pooembed.eu, etc.)
+                // Use iframe for all streams (pooembed.eu, embedsports.top, m3u8)
+                // This ensures compatibility with all stream types
                 return (
                   <iframe
                     src={streamUrl}
