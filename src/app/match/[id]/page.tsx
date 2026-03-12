@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import 'video.js/dist/video-js.css'
+import VideoJS from 'video.js'
 
 interface MatchInfo {
   id: string
@@ -85,6 +87,52 @@ interface StreamData {
   iframe_url?: string
   type: string
   message?: string
+}
+
+// VideoPlayer component for m3u8 streams with CORS proxy
+function VideoPlayer({ url }: { url: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const playerRef = useRef<any>(null)
+
+  // Use allorigins CORS proxy
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+
+  useEffect(() => {
+    if (!videoRef.current) return
+
+    if (!playerRef.current) {
+      const videoElement = videoRef.current
+      if (!videoElement) return
+
+      playerRef.current = VideoJS(videoElement, {
+        autoplay: true,
+        controls: true,
+        responsive: true,
+        fluid: true,
+        sources: [{
+          src: proxyUrl,
+          type: 'application/x-mpegURL'
+        }]
+      })
+    }
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.dispose()
+        playerRef.current = null
+      }
+    }
+  }, [proxyUrl])
+
+  return (
+    <div data-vjs-player>
+      <video
+        ref={videoRef}
+        className="video-js vjs-big-play-centered"
+        playsInline
+      />
+    </div>
+  )
 }
 
 export default function MatchDetail() {
@@ -328,6 +376,7 @@ export default function MatchDetail() {
             </div>
             <div className="p-4">
               {(() => {
+                const streamType = streamData?.type
                 const streamUrl = streamData?.iframe_url || streamData?.embed_url || sources?.[0]?.embedUrl
 
                 if (!streamUrl) {
@@ -339,8 +388,12 @@ export default function MatchDetail() {
                   )
                 }
 
-                // Use iframe for all streams (pooembed.eu, embedsports.top, m3u8)
-                // This ensures compatibility with all stream types
+                // Use video.js with CORS proxy for m3u8 streams
+                if (streamType === 'm3u8' || streamUrl.endsWith('.m3u8')) {
+                  return <VideoPlayer url={streamUrl} />
+                }
+
+                // Use iframe for other streams
                 return (
                   <iframe
                     src={streamUrl}
