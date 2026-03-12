@@ -340,13 +340,24 @@ export default function MatchDetail() {
                   )
                 }
 
-                // Use our clean stream.html page to embed streams
-                // This avoids ads from external embed sites
-                const ourStreamUrl = `https://ballq.vercel.app/stream.html?url=${encodeURIComponent(streamUrl)}`
+                // Use our clean stream.html for m3u8 streams (no ads)
+                // For iframe embeds, we need to use them directly
+                if (streamType === 'm3u8' || streamUrl.endsWith('.m3u8')) {
+                  const ourStreamUrl = `https://ballq.vercel.app/stream.html?url=${encodeURIComponent(streamUrl)}`
+                  return (
+                    <iframe
+                      src={ourStreamUrl}
+                      className="w-full aspect-video bg-black rounded-lg"
+                      allowFullScreen
+                      title="Live Stream"
+                    />
+                  )
+                }
 
+                // Use iframe directly for embed pages (football77, etc.)
                 return (
                   <iframe
-                    src={ourStreamUrl}
+                    src={streamUrl}
                     className="w-full aspect-video bg-black rounded-lg"
                     allowFullScreen
                     title="Live Stream"
